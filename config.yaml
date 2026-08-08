@@ -1,0 +1,84 @@
+# Predictive Modelling of Social Media Trend Emergence — single source of truth.
+# NO magic numbers in code. Every tunable lives here.
+# Values marked [VERIFIED] were measured from the corpus, not assumed.
+
+paths:
+  trending_csv:     dataset/tweets_25_tendencia_raw.csv
+  nontrending_csv:  dataset/tweets_25_notendencias_raw.csv
+  outputs:          outputs
+  cache:            outputs/cache
+  tables:           outputs/tables
+  figures:          outputs/figures
+
+seed: 42
+
+io:
+  chunksize: 300000
+  on_bad_lines: skip
+
+# ---------------------------------------------------------------------------
+# Collection band. [VERIFIED] The two pools were collected over different
+# hours; 16:00-23:59 on 2020-02-25 is the only band BOTH genuinely cover.
+# Binning outside it makes cross-class peak comparison invalid.
+# 16:00 is treated as collection start for BOTH classes. Keep symmetric.
+# ---------------------------------------------------------------------------
+band:
+  date:        "2020-02-25"
+  start_hour:  16
+  end_hour:    23          # inclusive; band ends 23:59:59
+  drop_dates:  ["2020-02-26"]   # next-day residue, 151 rows
+
+# Trending-only history, held out of the band. Used ONLY to validate the
+# censoring filter after the fact. Never an input to the filter, never
+# applied to negatives.
+validation_history:
+  enabled:    true
+  start_hour: 1
+  end_hour:   15
+
+# ---------------------------------------------------------------------------
+# Topic units
+# ---------------------------------------------------------------------------
+units:
+  bin_minutes: 5           # 480-min band -> 96 bins
+  smooth_bins: 3           # centred moving average before argmax; 1 = off
+
+  # [VERIFIED] Negatives are the bottleneck: inside the band ~174 non-trending
+  # hashtags reach 100 tweets vs ~103 at 150. Hence 100.
+  min_topic_tweets: 100
+  min_topic_tweets_sweep: [50, 100, 150]   # reported as sensitivity analysis
+
+  # Feature window: [peak - lead - length, peak - lead]. Features NEVER see
+  # data at or after (peak - lead).
+  window_minutes: 60
+  lead_minutes: 60
+  lead_sweep: [30, 60, 120, 180]           # lead-time curve (H2)
+  window_sweep: [30, 60, 90]
+  min_window_tweets: 20                    # need enough to form a graph
+
+censoring:
+  # LEFT: topic already running hot when collection starts -> its rise was
+  # never recorded. Activity in the first band bin >= this fraction of peak.
+  left_censor_frac: 0.25
+
+  # RIGHT: peak too close to band end to be confirmed as a peak.
+  min_post_peak_bins: 12          # 60 min of post-peak observation required
+  post_peak_decay_frac: 0.70      # post-peak mean must fall below this x peak
+
+language:
+  # [VERIFIED] Topic-level language matching — the control gotcha #5 prescribes
+  # — is IMPOSSIBLE on this corpus: zero English negatives in all 24 settings
+  # swept. Substituted control is tweet-level filtering: units are defined on
+  # all activity (the peak is a real-world event), but window FEATURES are
+  # computed only from tweets in feature_language. Every unit's features are
+  # then language-homogeneous, so language cannot carry class signal.
+  feature_language: es            # null = use all languages
+  es_majority_threshold: 0.5      # route-1 robustness check: es share of window
+  negative_control_langs: null    # null = all; else e.g. ["es"]
+
+model:
+  n_jobs: 1                       # 1 core assumed; -1 caused thrashing
+  cv_folds: 5
+  cv_repeats: 8
+  n_permutations: 100
+  n_bootstrap: 1000
