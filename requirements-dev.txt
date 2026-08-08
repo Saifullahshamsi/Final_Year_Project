@@ -1,0 +1,4 @@
+# Development / CI only. Runtime deps are in requirements.txt.
+-r requirements.txt
+
+ruff==0.7.4

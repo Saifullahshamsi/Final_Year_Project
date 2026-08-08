@@ -1,0 +1,17 @@
+line-length = 100
+target-version = "py312"
+
+exclude = [".venv", "outputs", "dataset", "prototype/prototype_extract.py",
+           "prototype/prototype_eval.py"]
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E741",  # ambiguous variable names — 'l' etc. are fine in short numeric code
+]
+
+[lint.per-file-ignores]
+# The prototype re-run is a deliberate near-verbatim copy of the frozen
+# scripts; reformatting it would defeat the point of the comparison.
+"prototype/rerun/*.py" = ["E402", "E501"]
+"tests/*.py" = ["B011"]

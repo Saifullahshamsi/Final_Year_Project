@@ -1,0 +1,16 @@
+# Core pipeline dependencies (pinned for reproducibility).
+# Python 3.12.6, Windows.
+#
+# Sentiment-channel deps (torch, transformers) are DEFERRED until the
+# sentiment stage — see requirements-sentiment.txt (written at that stage,
+# after XLM-T CPU cost is measured on this machine).
+
+pandas==2.2.3
+numpy==2.1.3
+networkx==3.4.2
+scikit-learn==1.5.2
+scipy==1.14.1
+matplotlib==3.9.2
+PyYAML==6.0.2
+statsmodels==0.14.4
+pytest==8.3.3
