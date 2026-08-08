@@ -1,0 +1,141 @@
+{
+  "config": {
+    "band": {
+      "date": "2020-02-25",
+      "start_hour": 16,
+      "end_hour": 23,
+      "drop_dates": [
+        "2020-02-26"
+      ]
+    },
+    "units": {
+      "bin_minutes": 5,
+      "smooth_bins": 3,
+      "min_topic_tweets": 100,
+      "min_topic_tweets_sweep": [
+        50,
+        100,
+        150
+      ],
+      "window_minutes": 60,
+      "lead_minutes": 60,
+      "lead_sweep": [
+        30,
+        60,
+        120,
+        180
+      ],
+      "window_sweep": [
+        30,
+        60,
+        90
+      ],
+      "min_window_tweets": 20
+    },
+    "censoring": {
+      "left_censor_frac": 0.25,
+      "min_post_peak_bins": 12,
+      "post_peak_decay_frac": 0.7
+    }
+  },
+  "n_units": 88,
+  "n_positive": 44,
+  "n_negative": 44,
+  "negatives_excluded_for_trending": 165,
+  "attrition_positive": {
+    "too_small": 123,
+    "left_censored": 109,
+    "right_censored_no_tail": 9,
+    "right_censored_no_decay": 3,
+    "window_before_band_start": 10,
+    "window_too_sparse": 24
+  },
+  "attrition_negative": {
+    "too_small": 76531,
+    "left_censored": 0,
+    "right_censored_no_tail": 13,
+    "right_censored_no_decay": 11,
+    "window_before_band_start": 54,
+    "window_too_sparse": 52
+  },
+  "topics_on_grid": {
+    "positive": 322,
+    "negative": 76705
+  },
+  "censoring_validation": {
+    "n_scored": 199,
+    "true_positives": 72,
+    "false_positives": 37,
+    "false_negatives": 8,
+    "true_negatives": 82,
+    "accuracy": 0.7739,
+    "recall_of_censored": 0.9,
+    "precision_of_flag": 0.6606,
+    "false_negative_rate": 0.1,
+    "false_positive_rate": 0.3109,
+    "mean_pre_band_volume_frac_flagged": 0.5862,
+    "mean_pre_band_volume_frac_kept": 0.1526,
+    "ground_truth_rule": "true peak (01:00-23:59 grid) falls before 16:00"
+  },
+  "feasibility_grid": {
+    "lead30_win30": {
+      "pos": 47,
+      "neg": 33
+    },
+    "lead30_win60": {
+      "pos": 52,
+      "neg": 64
+    },
+    "lead30_win90": {
+      "pos": 53,
+      "neg": 75
+    },
+    "lead60_win30": {
+      "pos": 41,
+      "neg": 23
+    },
+    "lead60_win60": {
+      "pos": 44,
+      "neg": 44
+    },
+    "lead60_win90": {
+      "pos": 46,
+      "neg": 53
+    },
+    "lead120_win30": {
+      "pos": 31,
+      "neg": 12
+    },
+    "lead120_win60": {
+      "pos": 34,
+      "neg": 24
+    },
+    "lead120_win90": {
+      "pos": 42,
+      "neg": 34
+    },
+    "lead180_win30": {
+      "pos": 23,
+      "neg": 6
+    },
+    "lead180_win60": {
+      "pos": 33,
+      "neg": 15
+    },
+    "lead180_win90": {
+      "pos": 34,
+      "neg": 21
+    }
+  },
+  "language_by_class": {
+    "trending": {
+      "es": 27,
+      "en": 16,
+      "ca": 1
+    },
+    "non_trending": {
+      "es": 44
+    }
+  },
+  "seed": 42
+}
