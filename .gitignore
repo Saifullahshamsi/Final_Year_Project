@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# Data — NEVER commit. ~1.2 GB, and republishing raw tweet text would breach
+# the Twitter/X terms the corpus was collected under. See scripts/get_data.md.
+# ---------------------------------------------------------------------------
+dataset/
+*.csv.gz
+*.jsonl
+
+# Regenerable intermediates. Small derived TABLES (outputs/tables) and FIGURES
+# (outputs/figures) ARE committed — they contain no tweet text.
+outputs/cache/
+outputs/data/
+
+# Report drafts — not code, and not reviewed for tweet text. Deliberately out
+# of the public repo.
+Submitted Work(Mid)/
+*.docx
+*.pdf
+
+# Environment
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Any bulk CSV that is not one of the small committed artifacts.
+# (git has no size gate; keep large CSVs under dataset/ or outputs/cache/.)

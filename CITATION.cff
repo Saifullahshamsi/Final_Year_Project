@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: >-
+  Predictive Modelling of Social Media Trend Emergence:
+  fusing temporal, sentiment and network-diffusion signals
+message: >-
+  This repository contains the code for a final-year undergraduate
+  data science project. It is coursework, not a peer-reviewed
+  publication. The underlying tweet corpus is not distributed here.
+type: software
+authors:
+  - given-names: TODO-SET-YOUR-GIVEN-NAME
+    family-names: TODO-SET-YOUR-FAMILY-NAME
+    email: jawedh011@gmail.com
+license: MIT
+repository-code: "https://github.com/OWNER/REPO"
+abstract: >-
+  An offline study predicting topic-level trend emergence on Twitter
+  ahead of peak, on a static one-day historical corpus. Three feature
+  channels normally studied in isolation — temporal volume dynamics,
+  multilingual sentiment, and mention/reply interaction-graph structure
+  — are fused, and each channel's marginal contribution is isolated by
+  ablation. Evaluation uses PR-AUC as the headline metric under
+  topic-grouped cross-validation, with a lead-time curve as the
+  evidence for extended prediction horizon.
+keywords:
+  - trend prediction
+  - social network analysis
+  - information diffusion
+  - signal fusion
+  - Twitter
