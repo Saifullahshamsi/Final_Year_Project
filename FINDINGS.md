@@ -115,19 +115,27 @@ Both filters run on band data alone and are symmetric across classes.
 
 **The filter's own accuracy is measured, not assumed.** Trending topics retain
 history from 01:00–15:59 which the filter never sees. Running the filter blind
-on the 16:00+ band and scoring its verdicts against that held-out history
-gives, over 199 eligible positives:
+on the 16:00+ band and scoring its verdicts against that held-out history:
 
-| | |
-|---|---|
-| accuracy | **77.4%** |
-| recall of truly-censored topics | **90.0%** |
-| false-negative rate (contamination let through) | **10.0%** (8 topics) |
-| false-positive rate (clean topics wrongly dropped) | **31.1%** (37 topics) |
-| mean pre-band volume — flagged topics | 58.6% |
-| mean pre-band volume — kept topics | 15.3% |
+| | at ≥100 tweets (199 scored) | **final setting, ≥50 tweets (240 scored)** |
+|---|---|---|
+| accuracy | 77.4% | **75.0%** |
+| recall of truly-censored topics | 90.0% | **84.0%** |
+| false-negative rate (contamination let through) | 10.0% (8) | **16.0% (17)** |
+| false-positive rate (clean topics wrongly dropped) | 31.1% (37) | **32.1% (43)** |
+| mean pre-band volume — flagged | 58.6% | 58.2% |
+| mean pre-band volume — kept | 15.3% | 19.1% |
 
-The 58.6% vs 15.3% separation confirms the filter keys on the intended signal.
+**The numbers moved when `min_topic_tweets` dropped from 100 to 50**, and the
+direction is the honest one: admitting smaller topics admits noisier volume
+curves, so the filter's recall falls from 90% to 84% and contamination rises
+from 10% to 16%. **The final-setting figures are the ones that describe this
+pipeline.** The earlier column is kept because it was reported first and the
+degradation is itself informative — filter reliability is a function of topic
+size.
+
+The ~58% vs ~19% pre-band volume separation holds in both, confirming the
+filter keys on the intended signal either way.
 
 **The trade-off is deliberately conservative.** Contamination invalidates the
 pre-peak claim outright; discarding a clean topic only costs sample size. A
@@ -174,12 +182,26 @@ Spanish tweets. Every unit's features are then language-homogeneous, so
 language cannot carry class signal, and no topics are discarded for being
 multilingual.
 
-Cost measured: 5–14 positives fall below the window-volume threshold on Spanish
-alone, depending on setting. Negatives are essentially unaffected — they were
-~89% Spanish already.
+**Cost measured — and it is asymmetric for a reason worth stating.** At the
+final setting the filter removes **6 positives and 6 negatives** (48/93 →
+42/87). Proportionally that is 12.5% of positives against 6.5% of negatives.
 
-A language-only negative-control classifier is retained regardless, and the
-topic-level Spanish-only restriction is reported as a robustness check.
+The filter is nearly free on the negative class because **the non-trending pool
+was already ~89% Spanish** — there is almost nothing for a Spanish filter to
+remove. It genuinely thins the positive class, which is multilingual (43.7% en,
+28.3% es). So the control costs what it should cost: it bites exactly where the
+confound lived.
+
+Six positives to eliminate a confound that could otherwise have produced a
+high-accuracy classifier that had learned nothing but language is cheap.
+
+A language-only negative-control classifier is retained regardless.
+
+**Route 1 — Spanish-majority topics — is a descriptive check, not a second
+model.** Restricting to units whose window is ≥50% Spanish yields 18 positives
+against 87 negatives at the final setting. That cannot support the significance
+testing the evaluation requires, so it is reported as a descriptive comparison
+only. It is stated here explicitly so it is not read as a suppressed arm.
 
 **Discovering that a planned control cannot be run, and substituting one that
 can, is itself a result.** It is recorded here rather than quietly dropped.
@@ -208,4 +230,33 @@ Sensitivity of the window-volume threshold, at ≥50 tweets / 60-min lead /
 | 20 | 39 | 63 | 102 |
 | 25 | 37 | 42 | 79 |
 
-Full sensitivity across 15/20/25 is reported at evaluation.
+**Final setting: ≥50 tweets, 60-min lead, 90-min window, ≥15 window tweets →
+129 units (42 trending / 87 non-trending).** Floor cleared. Full decision record
+in [`outputs/tables/parameter_decision.md`](outputs/tables/parameter_decision.md);
+sensitivity across 15/20/25 is reported at evaluation.
+
+---
+
+## 2026-08-08 — Prevalence is 0.326, and that settles the headline metric
+
+The prototype was **artificially balanced** — 140 trending against 125
+non-trending, prevalence 0.528, because both classes were sampled to a target
+size. This pipeline is not balanced. Negatives are what the corpus yields after
+censoring, so the real class split is **42 / 87 — prevalence 0.326**.
+
+**Consequence: PR-AUC is the correct headline metric here as a matter of fact,
+not of taste.**
+
+- **Chance PR-AUC is 0.326**, not 0.5. Any PR-AUC must be read against that
+  baseline, and a model scoring 0.33 has learned nothing.
+- Chance ROC-AUC remains 0.5 regardless of prevalence. That is exactly why ROC
+  misleads under imbalance (Saito & Rehmsmeier, 2015): the larger negative pool
+  suppresses false-positive rate, so ROC-AUC stays flattering while precision
+  quietly degrades.
+- **Every ROC number reported in this project must be read against a PR-AUC
+  from the same run.** ROC-AUC alone overstates performance on a 0.326-
+  prevalence problem.
+
+This also means the prototype's ROC figures and this pipeline's ROC figures are
+**not directly comparable** — different prevalence, different unit definition.
+They are reported separately and never merged into one table.
