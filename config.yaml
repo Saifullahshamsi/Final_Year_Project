@@ -43,18 +43,27 @@ units:
   bin_minutes: 5           # 480-min band -> 96 bins
   smooth_bins: 3           # centred moving average before argmax; 1 = off
 
-  # [VERIFIED] Negatives are the bottleneck: inside the band ~174 non-trending
-  # hashtags reach 100 tweets vs ~103 at 150. Hence 100.
-  min_topic_tweets: 100
+  # [VERIFIED] Negatives are the bottleneck throughout. At min 100 the total
+  # caps at 112 units for a 60-min lead, below the 120 floor; 50 is what makes
+  # the 1-hour lead viable at all.
+  min_topic_tweets: 50
   min_topic_tweets_sweep: [50, 100, 150]   # reported as sensitivity analysis
 
-  # Feature window: [peak - lead - length, peak - lead]. Features NEVER see
+  # Feature window: [peak - lead - length, peak - lead). Features NEVER see
   # data at or after (peak - lead).
-  window_minutes: 60
+  # Contingency level 2: the window was WIDENED (60 -> 90) rather than the lead
+  # shortened, because lead time is the contribution being tested. A 30-min
+  # lead reaches 149 units but surrenders the claim.
+  window_minutes: 90
   lead_minutes: 60
   lead_sweep: [30, 60, 120, 180]           # lead-time curve (H2)
   window_sweep: [30, 60, 90]
-  min_window_tweets: 20                    # need enough to form a graph
+
+  # TUNED PARAMETER. Set from unit counts alone, before any classifier existed;
+  # no model performance was visible at selection time. 20 -> 15 is what clears
+  # the 120-unit floor (102 -> 129). Sensitivity across 15/20/25 is reported at
+  # evaluation. See outputs/tables/parameter_decision.md.
+  min_window_tweets: 15
 
 censoring:
   # LEFT: topic already running hot when collection starts -> its rise was
