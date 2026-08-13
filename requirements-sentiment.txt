@@ -1,0 +1,20 @@
+# Sentiment channel only. Deliberately NOT in requirements.txt or
+# requirements-dev.txt: ~2.5 GB installed, and CI has no dataset to score, so
+# keeping it out holds the CI run under a minute. Sentiment tests skip when
+# torch is absent.
+#
+# Install:  .venv/Scripts/python -m pip install -r requirements-sentiment.txt
+#
+# Measured on this machine (i9-13900H, 14 cores, torch using 14 threads),
+# XLM-T fp32 at batch 16 with length-sorted dynamic padding: 35.2 tweets/s.
+# See outputs/tables/sentiment_cost.json for the workload it has to cover.
+#
+# torch is pinned to the CPU wheel index. Install it with:
+#   pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+# The default index serves the CUDA build, which is ~2 GB larger and useless
+# here.
+
+torch==2.5.1
+transformers==4.46.3
+sentencepiece==0.2.0    # XLM-R tokenizer is sentencepiece; fails without it
+protobuf==5.28.3        # required by the slow->fast tokenizer conversion
