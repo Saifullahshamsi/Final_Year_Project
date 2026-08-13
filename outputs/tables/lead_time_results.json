@@ -1,0 +1,588 @@
+{
+  "window_minutes": 90,
+  "leads": [
+    30,
+    60,
+    120,
+    180
+  ],
+  "seed": 42,
+  "results": {
+    "30": {
+      "n_units": 183,
+      "n_positive": 51,
+      "n_negative": 132,
+      "prevalence": 0.2786885245901639,
+      "modelled": true,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.6194277545953313,
+          "pr_auc_ci": [
+            0.5000681278528835,
+            0.7663050589257384
+          ],
+          "roc_auc": 0.7903297682709448,
+          "f1": 0.6326530612244898,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.7207891966849861,
+          "pr_auc_ci": [
+            0.6119496466546018,
+            0.8202755433841397
+          ],
+          "roc_auc": 0.8051099227569816,
+          "f1": 0.6666666666666666,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.7886970158226846,
+          "pr_auc_ci": [
+            0.68926865657808,
+            0.873523970413127
+          ],
+          "roc_auc": 0.8426916221033869,
+          "f1": 0.6804123711340206,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.7690093623448906,
+          "pr_auc_ci": [
+            0.6708082029455783,
+            0.8599591968743338
+          ],
+          "roc_auc": 0.8382352941176471,
+          "f1": 0.6458333333333334,
+          "n_features": 31
+        }
+      },
+      "fusion_vs_volume_extended": {
+        "only_a_correct": 12,
+        "only_b_correct": 13,
+        "discordant": 25,
+        "statistic": 12.0,
+        "p_value": 1.0
+      },
+      "lift": {
+        "volume_only": 0.3407,
+        "volume_extended": 0.4421,
+        "volume_plus_structure": 0.51,
+        "full_fusion": 0.4903
+      }
+    },
+    "60": {
+      "n_units": 129,
+      "n_positive": 42,
+      "n_negative": 87,
+      "prevalence": 0.32558139534883723,
+      "modelled": true,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.6494661372831332,
+          "pr_auc_ci": [
+            0.5092072534078791,
+            0.7712240018174774
+          ],
+          "roc_auc": 0.723864258347017,
+          "f1": 0.5714285714285714,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.8195055964843613,
+          "pr_auc_ci": [
+            0.7008428482758992,
+            0.9120093393095722
+          ],
+          "roc_auc": 0.8891625615763546,
+          "f1": 0.7804878048780488,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.8158942274729433,
+          "pr_auc_ci": [
+            0.7043357225601887,
+            0.9014659262837602
+          ],
+          "roc_auc": 0.8626163108921729,
+          "f1": 0.7,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.857204181408041,
+          "pr_auc_ci": [
+            0.7627270827448606,
+            0.9298482084381857
+          ],
+          "roc_auc": 0.8946360153256705,
+          "f1": 0.7368421052631579,
+          "n_features": 31
+        }
+      },
+      "fusion_vs_volume_extended": {
+        "only_a_correct": 9,
+        "only_b_correct": 11,
+        "discordant": 20,
+        "statistic": 9.0,
+        "p_value": 0.8238029479980469
+      },
+      "lift": {
+        "volume_only": 0.3239,
+        "volume_extended": 0.4939,
+        "volume_plus_structure": 0.4903,
+        "full_fusion": 0.5316
+      }
+    },
+    "120": {
+      "n_units": 93,
+      "n_positive": 35,
+      "n_negative": 58,
+      "prevalence": 0.3763440860215054,
+      "modelled": true,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.6413267308058335,
+          "pr_auc_ci": [
+            0.47371163393011506,
+            0.8052321560087452
+          ],
+          "roc_auc": 0.7386699507389163,
+          "f1": 0.6666666666666666,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.6872664964196079,
+          "pr_auc_ci": [
+            0.5276854552818018,
+            0.8330866788959652
+          ],
+          "roc_auc": 0.7221674876847292,
+          "f1": 0.6349206349206349,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.7390109029916583,
+          "pr_auc_ci": [
+            0.5811292865188559,
+            0.8576515634686066
+          ],
+          "roc_auc": 0.7802955665024631,
+          "f1": 0.6086956521739131,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.6771744508490677,
+          "pr_auc_ci": [
+            0.5143292219613327,
+            0.8336626272147136
+          ],
+          "roc_auc": 0.7694581280788176,
+          "f1": 0.6486486486486487,
+          "n_features": 31
+        }
+      },
+      "fusion_vs_volume_extended": {
+        "only_a_correct": 8,
+        "only_b_correct": 11,
+        "discordant": 19,
+        "statistic": 8.0,
+        "p_value": 0.6476058959960938
+      },
+      "lift": {
+        "volume_only": 0.265,
+        "volume_extended": 0.3109,
+        "volume_plus_structure": 0.3627,
+        "full_fusion": 0.3008
+      }
+    },
+    "180": {
+      "n_units": 64,
+      "n_positive": 27,
+      "n_negative": 37,
+      "prevalence": 0.421875,
+      "modelled": true,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.6108410667787043,
+          "pr_auc_ci": [
+            0.44741821486982736,
+            0.8112996767627753
+          ],
+          "roc_auc": 0.7302302302302301,
+          "f1": 0.6206896551724138,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.5986828864036571,
+          "pr_auc_ci": [
+            0.41708512578484574,
+            0.770454666619871
+          ],
+          "roc_auc": 0.6536536536536536,
+          "f1": 0.5614035087719298,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.6759282657190135,
+          "pr_auc_ci": [
+            0.5002704244894834,
+            0.828059722699458
+          ],
+          "roc_auc": 0.7077077077077076,
+          "f1": 0.5490196078431373,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.6619961137192217,
+          "pr_auc_ci": [
+            0.4923237116661319,
+            0.8321045330438053
+          ],
+          "roc_auc": 0.7177177177177178,
+          "f1": 0.6153846153846154,
+          "n_features": 31
+        }
+      },
+      "fusion_vs_volume_extended": {
+        "only_a_correct": 15,
+        "only_b_correct": 10,
+        "discordant": 25,
+        "statistic": 10.0,
+        "p_value": 0.42435622215270996
+      },
+      "lift": {
+        "volume_only": 0.189,
+        "volume_extended": 0.1768,
+        "volume_plus_structure": 0.2541,
+        "full_fusion": 0.2401
+      }
+    }
+  },
+  "nested_common_topics": [
+    "actualidad",
+    "al bar\u00e7a",
+    "alfonso",
+    "amazon",
+    "ansu",
+    "barcelona",
+    "bolivia",
+    "busquets",
+    "callejon",
+    "carnaval2020",
+    "championsleague",
+    "championsxespn",
+    "chelsea-bayern",
+    "chicken little",
+    "comandanteborolas",
+    "coronavirusarv",
+    "cuaresma",
+    "cultura",
+    "edomex",
+    "el barsa",
+    "elsalvador",
+    "ent\u00e9rate",
+    "este bar\u00e7a",
+    "gattuso",
+    "huejotzingo",
+    "insigne",
+    "junior",
+    "lampard",
+    "lewandowski",
+    "manolas",
+    "messi",
+    "momentobarreto",
+    "muller",
+    "mundo",
+    "napoles",
+    "napoli",
+    "napolibar\u00e7a",
+    "niunamenos",
+    "ospina",
+    "paronacionaldemujeres",
+    "piqu\u00e9",
+    "rakitic",
+    "rt",
+    "san paolo",
+    "semedo",
+    "stamford bridge",
+    "supervivientes2020",
+    "ucl",
+    "upaep",
+    "valencia",
+    "vamos bar\u00e7a",
+    "vidal"
+  ],
+  "nested": {
+    "30": {
+      "n_units": 52,
+      "prevalence": 0.5,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.7649761908699793,
+          "pr_auc_ci": [
+            0.5957425137563025,
+            0.9157776713686033
+          ],
+          "roc_auc": 0.7936390532544378,
+          "f1": 0.7796610169491526,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.9057832707909468,
+          "pr_auc_ci": [
+            0.8053730678399995,
+            0.9741630733151225
+          ],
+          "roc_auc": 0.8831360946745563,
+          "f1": 0.84,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.8898120091201857,
+          "pr_auc_ci": [
+            0.7629947110597374,
+            0.9773132589818372
+          ],
+          "roc_auc": 0.886094674556213,
+          "f1": 0.8301886792452831,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.8832210412336712,
+          "pr_auc_ci": [
+            0.7509229979930981,
+            0.988438244546199
+          ],
+          "roc_auc": 0.9127218934911243,
+          "f1": 0.8679245283018868,
+          "n_features": 31
+        }
+      },
+      "mcnemar": {
+        "volume_only__vs__volume_plus_structure": {
+          "only_a_correct": 4,
+          "only_b_correct": 8,
+          "discordant": 12,
+          "statistic": 4.0,
+          "p_value": 0.3876953125
+        },
+        "volume_only__vs__full_fusion": {
+          "only_a_correct": 2,
+          "only_b_correct": 8,
+          "discordant": 10,
+          "statistic": 2.0,
+          "p_value": 0.109375
+        }
+      },
+      "lift": {
+        "volume_only": 0.265,
+        "volume_extended": 0.4058,
+        "volume_plus_structure": 0.3898,
+        "full_fusion": 0.3832
+      }
+    },
+    "60": {
+      "n_units": 52,
+      "prevalence": 0.5,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.7949602820864538,
+          "pr_auc_ci": [
+            0.6268647793699318,
+            0.920369603108333
+          ],
+          "roc_auc": 0.790680473372781,
+          "f1": 0.6923076923076923,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.8841595189411695,
+          "pr_auc_ci": [
+            0.7785550098204145,
+            0.9643944372637434
+          ],
+          "roc_auc": 0.8594674556213018,
+          "f1": 0.8163265306122449,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.8884426302772932,
+          "pr_auc_ci": [
+            0.7869150223560676,
+            0.9646725210781647
+          ],
+          "roc_auc": 0.8550295857988165,
+          "f1": 0.7924528301886793,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.8582746803498305,
+          "pr_auc_ci": [
+            0.7257329277374068,
+            0.954259256133529
+          ],
+          "roc_auc": 0.8431952662721893,
+          "f1": 0.8076923076923077,
+          "n_features": 31
+        }
+      },
+      "mcnemar": {
+        "volume_only__vs__volume_plus_structure": {
+          "only_a_correct": 4,
+          "only_b_correct": 9,
+          "discordant": 13,
+          "statistic": 4.0,
+          "p_value": 0.266845703125
+        },
+        "volume_only__vs__full_fusion": {
+          "only_a_correct": 3,
+          "only_b_correct": 9,
+          "discordant": 12,
+          "statistic": 3.0,
+          "p_value": 0.14599609375
+        }
+      },
+      "lift": {
+        "volume_only": 0.295,
+        "volume_extended": 0.3842,
+        "volume_plus_structure": 0.3884,
+        "full_fusion": 0.3583
+      }
+    },
+    "120": {
+      "n_units": 52,
+      "prevalence": 0.5,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.6986315370239664,
+          "pr_auc_ci": [
+            0.5309308661773726,
+            0.8581998026515865
+          ],
+          "roc_auc": 0.7034023668639053,
+          "f1": 0.7142857142857143,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.8173539165529916,
+          "pr_auc_ci": [
+            0.6728687236186695,
+            0.93299805583867
+          ],
+          "roc_auc": 0.7855029585798817,
+          "f1": 0.8,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.9226572229216097,
+          "pr_auc_ci": [
+            0.8416630795704485,
+            0.9795817281805226
+          ],
+          "roc_auc": 0.8964497041420119,
+          "f1": 0.8235294117647058,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.8800100892810465,
+          "pr_auc_ci": [
+            0.7714112521189468,
+            0.9580848706556778
+          ],
+          "roc_auc": 0.8372781065088758,
+          "f1": 0.7692307692307693,
+          "n_features": 31
+        }
+      },
+      "mcnemar": {
+        "volume_only__vs__volume_plus_structure": {
+          "only_a_correct": 4,
+          "only_b_correct": 11,
+          "discordant": 15,
+          "statistic": 4.0,
+          "p_value": 0.11846923828124999
+        },
+        "volume_only__vs__full_fusion": {
+          "only_a_correct": 6,
+          "only_b_correct": 10,
+          "discordant": 16,
+          "statistic": 6.0,
+          "p_value": 0.454498291015625
+        }
+      },
+      "lift": {
+        "volume_only": 0.1986,
+        "volume_extended": 0.3174,
+        "volume_plus_structure": 0.4227,
+        "full_fusion": 0.38
+      }
+    },
+    "180": {
+      "n_units": 52,
+      "prevalence": 0.5,
+      "arms": {
+        "volume_only": {
+          "pr_auc": 0.5152740949120729,
+          "pr_auc_ci": [
+            0.377504774288232,
+            0.7251208740370927
+          ],
+          "roc_auc": 0.5451183431952662,
+          "f1": 0.47058823529411764,
+          "n_features": 3
+        },
+        "volume_extended": {
+          "pr_auc": 0.6195542418025065,
+          "pr_auc_ci": [
+            0.4517287926403488,
+            0.8015230949304758
+          ],
+          "roc_auc": 0.5784023668639053,
+          "f1": 0.5660377358490566,
+          "n_features": 33
+        },
+        "volume_plus_structure": {
+          "pr_auc": 0.7639236299623734,
+          "pr_auc_ci": [
+            0.5973288291015907,
+            0.9006991046114823
+          ],
+          "roc_auc": 0.7307692307692308,
+          "f1": 0.7142857142857143,
+          "n_features": 13
+        },
+        "full_fusion": {
+          "pr_auc": 0.6987349351868248,
+          "pr_auc_ci": [
+            0.5215957511155679,
+            0.8500537065873839
+          ],
+          "roc_auc": 0.6642011834319527,
+          "f1": 0.5882352941176471,
+          "n_features": 31
+        }
+      },
+      "mcnemar": {
+        "volume_only__vs__volume_plus_structure": {
+          "only_a_correct": 6,
+          "only_b_correct": 17,
+          "discordant": 23,
+          "statistic": 6.0,
+          "p_value": 0.03468966484069824
+        },
+        "volume_only__vs__full_fusion": {
+          "only_a_correct": 11,
+          "only_b_correct": 17,
+          "discordant": 28,
+          "statistic": 11.0,
+          "p_value": 0.34492845088243484
+        }
+      },
+      "lift": {
+        "volume_only": 0.0153,
+        "volume_extended": 0.1196,
+        "volume_plus_structure": 0.2639,
+        "full_fusion": 0.1987
+      }
+    }
+  }
+}

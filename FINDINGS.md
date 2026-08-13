@@ -276,6 +276,292 @@ distribution at 1× and 10× the tweet count and asserts that no feature moves.
 
 ---
 
+## 2026-08-13 — H2 result: structure extends lead time, at marginal significance
+
+H2 claims network and sentiment features extend the achievable lead time beyond
+engagement counts alone. **Directionally supported, and the effect is large —
+but it reaches only marginal significance and does not survive correction for
+the four tests run.**
+
+### Two problems the naive curve has
+
+**1. PR-AUC is not comparable across leads.** The surviving sample changes with
+the lead, and so does its prevalence — 0.279 at 30 min, 0.326 at 60, 0.376 at
+120, 0.422 at 180. Chance PR-AUC *equals* prevalence, so a raw PR-AUC of 0.62
+means something different at each lead. Lift over chance is the comparable
+quantity.
+
+**2. The sample composition changes with the lead.** A longer lead needs the
+window to start earlier, so more topics fail the "window fits in the band"
+filter: 183 units at 30 min, 129 at 60, 93 at 120, 64 at 180. A raw curve
+therefore confounds *performance changing with lead time* with *the surviving
+topics changing with lead time*.
+
+Both are handled: lift is reported, and the curve is re-run on the **52 topics
+that survive at every lead**, which is the only way to isolate the lead effect.
+
+### Full sample (composition varies)
+
+| lead | n | pos | chance | volume_only | volume_extended | volume+structure | full_fusion |
+|---|---|---|---|---|---|---|---|
+| 30 | 183 | 51 | 0.279 | 0.619 | 0.721 | 0.789 | 0.769 |
+| 60 | 129 | 42 | 0.326 | 0.649 | 0.820 | 0.816 | 0.857 |
+| 120 | 93 | 35 | 0.376 | 0.641 | 0.687 | 0.739 | 0.677 |
+| 180 | 64 | 27 | 0.422 | 0.611 | 0.599 | 0.676 | 0.662 |
+
+Lift over chance, which is the readable version:
+
+| lead | volume_only | volume_extended | volume+structure | full_fusion |
+|---|---|---|---|---|
+| 30 | +0.341 | +0.442 | +0.510 | +0.490 |
+| 60 | +0.324 | +0.494 | +0.490 | +0.532 |
+| 120 | +0.265 | +0.311 | +0.363 | +0.301 |
+| 180 | +0.189 | +0.177 | **+0.254** | +0.240 |
+
+### Nested comparison — the same 52 topics at every lead
+
+Prevalence is fixed at 0.500 here, so PR-AUC is directly comparable across rows.
+
+| lead | volume_only | volume_extended | volume+structure | full_fusion |
+|---|---|---|---|---|
+| 30 | 0.765 | 0.906 | 0.890 | 0.883 |
+| 60 | 0.795 | 0.884 | 0.888 | 0.858 |
+| 120 | 0.699 | 0.817 | **0.923** | 0.880 |
+| 180 | **0.515** | 0.620 | **0.764** | 0.699 |
+
+**This is the H2 pattern, and it is stark at three hours.** Engagement counts
+alone decay to **0.515 against a chance of 0.500 — volume is dead at a 3-hour
+lead.** Volume plus network structure still reaches 0.764.
+
+### Significance, stated with its limits
+
+McNemar, exact, on the common 52-topic subset:
+
+| lead | volume_only vs volume+structure | discordant | volume_only vs full_fusion |
+|---|---|---|---|
+| 30 | p = 0.3877 | 4 / 8 | p = 0.1094 |
+| 60 | p = 0.2668 | 4 / 9 | p = 0.1460 |
+| 120 | p = 0.1185 | 4 / 11 | p = 0.4545 |
+| 180 | **p = 0.0347** | 6 / 17 | p = 0.3449 |
+
+**The p-value falls monotonically as the lead grows — 0.388, 0.267, 0.119,
+0.035 — which is precisely the direction H2 predicts.** The gap between volume
+alone and volume-plus-structure widens the earlier the cut-off is placed.
+
+**Three qualifications, none of which should be dropped:**
+
+1. **Four tests were run. Bonferroni-corrected α is 0.0125, and p = 0.0347 does
+   not survive it.** The monotone trend across leads is more persuasive than
+   the single significant cell, but the cell alone does not clear correction.
+2. **It is structure, not fusion.** `volume_plus_structure` shows the effect;
+   `full_fusion` does not (p = 0.345 at 180 min) and scores lower at every
+   lead in the nested design. Adding sentiment and temporal features **dilutes**
+   the signal rather than adding to it — consistent with the H1 finding that
+   those channels largely re-encode volume.
+3. **n = 52, split 26/26.** The effect size is large — 0.515 versus 0.764 is
+   not a subtle difference — but the sample cannot establish it firmly.
+
+### Verdict
+
+**H2 is supported directionally and not statistically.** The honest statement
+is that network structure appears to retain predictive signal at lead times
+where engagement counts alone have decayed to chance, that the effect grows
+with lead time exactly as predicted, and that this study is too small to
+confirm it at conventional significance after correction.
+
+That is a weaker claim than "H2 confirmed" and a considerably stronger one than
+"no effect found". It is also the most interesting result in the project: the
+one place where a non-volume channel demonstrably does something volume cannot.
+
+---
+
+## 2026-08-13 — Baseline specification determines the conclusion
+
+**Same fusion model. Same data. Same metric. Same folds. Opposite conclusions.**
+
+| comparison | PR-AUC | McNemar p | conclusion |
+|---|---|---|---|
+| full_fusion vs `volume_only` (3 features) | 0.853 vs 0.649 | **0.0059** | H1 supported |
+| full_fusion vs `volume_extended` (33 features) | 0.853 vs 0.820 | **0.6636** | H1 not supported |
+
+Nothing changed between those two rows except **which baseline the fused model
+was asked to beat**.
+
+**The weak comparison is the one that was originally planned.** The ablation
+hierarchy specified in the project design ran chance → single-signal baselines
+→ fusion, with volume represented by engagement counts. `volume_extended` did
+not exist as a planned arm. It was constructed only because the size-proxy
+audit had exiled twelve features from the other channels for encoding volume —
+and once those features were identified as volume, the obvious question was
+what volume could do if it were *given* them.
+
+Reporting the planned comparison alone would have been **technically true and
+substantively misleading**: every number correct, the test correctly executed,
+and the conclusion an artifact of the opponent chosen.
+
+### Why this generalises
+
+A fusion claim is a claim about *marginal* contribution. Marginal to what is
+not a detail — it is the entire content of the claim. An under-specified
+baseline does not merely weaken a comparison; it silently changes what is being
+asserted, from "these channels add information" to "these channels add
+information that three hand-picked features happen to lack".
+
+The failure is invisible from inside the result. p = 0.0059 looks like a
+finding. It is a finding — about a baseline nobody would defend if it were
+stated explicitly.
+
+**Operational form of the lesson:** before running an ablation, construct the
+strongest version of the baseline you are trying to beat, using every feature
+you are willing to grant it. If the hypothesis only survives against the weak
+version, that is the result.
+
+This ranks second only to the size-proxy pattern among the transferable
+findings here — and the two are connected: the audit that produced
+`volume_extended` is the same audit that defeated H1 with it.
+
+---
+
+## 2026-08-13 — The size-proxy finding reappears at model level
+
+The feature-level audit found that twelve features across three channels
+encoded sample size under other names. The ablation now shows the same thing at
+model level:
+
+* each channel beats the *minimal* volume baseline (p = 0.024, 0.017, 0.029);
+* no channel adds anything to a volume model that has been given the exiled
+  features (p = 0.66);
+* the arm built entirely from size-derived features (`volume_extended`) posts
+  the best F1 in the study (0.780).
+
+**These are not two results that happen to agree — they are one phenomenon
+observed at two scales.** At feature level it looks like `reciprocity`
+correlating with tweet count at ρ = 0.447. At model level it looks like a
+fused model failing to beat volume. The mechanism is identical: at this window
+size the channels are largely **re-encoding volume rather than adding to it**.
+
+That mutual corroboration is what makes the conclusion credible. A model-level
+null alone would be ambiguous — underpowered study, wrong model family, bad
+hyperparameters. A feature-level correlation alone would be suggestive but not
+decisive about predictive value. Together they identify a specific, measurable
+cause.
+
+**This is the report's central claim.**
+
+---
+
+## 2026-08-13 — Independent replication of the negative result
+
+Network structure does not beat volume alone. This has now been found **twice,
+by two studies that share almost nothing methodologically**:
+
+| | prototype | this pipeline |
+|---|---|---|
+| unit | earliest fixed 150 tweets | pre-peak window, 1-hour lead |
+| volume control | fixed by construction | measured and audited out |
+| model | random forest | gradient-boosted trees |
+| prevalence | 0.528 (balanced by sampling) | 0.326 (as observed) |
+| negatives | 125 (6 leaked) | 87 (0 leaked) |
+| test | Wilcoxon on paired folds | exact McNemar on OOF decisions |
+| result | p = 0.81 (recorded), 0.96 (re-run) | **p = 1.0000**, 21 discordant each way |
+
+Different unit definition, different volume control, different model family,
+different significance test, different class balance, different negative pool.
+Same conclusion.
+
+**An independent replication of one's own negative result is stronger evidence
+than either study alone.** The prototype's finding could have been an artifact
+of the fixed-150 proxy, or of the leaked negatives, or of the balanced
+sampling. It survives the removal of all three.
+
+The 21-versus-21 split is worth stating precisely: the two arms disagree on 42
+of 129 units and are right on exactly half each. That is not a small effect
+that failed to reach significance — it is the absence of a difference in
+direction.
+
+---
+
+## 2026-08-13 — Statistical power: what this study cannot show
+
+**Stated prominently because it qualifies every result above, including the
+ones that came out favourably.**
+
+129 units. **42 positives.** Every confidence interval reported here is wide —
+typically ±0.10 to ±0.15 PR-AUC. Effects smaller than roughly **0.1 PR-AUC are
+not detectable at this sample size.**
+
+**"Not significant" is not "no difference".** `full_fusion` (0.853) may
+genuinely be better than `volume_extended` (0.820). This study cannot show it,
+and the correct statement is that no difference was detected — not that none
+exists.
+
+**The reverse risk matters just as much.** With 42 positives, a comparison
+would have needed an implausibly large effect to reach significance. So the
+*absence* of a significant fusion benefit is correspondingly weak evidence of
+absence. Both the positive and the negative readings are underpowered, and
+neither should be presented as settled.
+
+What the study can support: direction, mechanism, and the identification of a
+specific confound. What it cannot support: precise effect sizes, or a claim
+that fusion is worthless.
+
+**Underpowered-but-honest is the correct framing**, and it is preferable to a
+better-looking number obtained by relaxing the censoring filters, the size
+audit or the baseline specification — each of which was available and each of
+which was declined.
+
+---
+
+## 2026-08-13 — PR-AUC over ROC-AUC, demonstrated rather than cited
+
+Saito & Rehmsmeier (2015) show that ROC curves are misleading under class
+imbalance, because a large negative pool suppresses the false-positive rate
+even when precision is poor. That principle is demonstrated directly on this
+data by the `sentiment_only` arm:
+
+| metric | sentiment_only | chance |
+|---|---|---|
+| ROC-AUC | **0.783** | 0.500 |
+| PR-AUC | **0.564** | **0.326** |
+
+On ROC-AUC it reads as a solid channel, comfortably above chance. Against a
+chance PR-AUC of 0.326 — the actual prevalence — it is the **weakest arm in the
+study**, below even the three-feature volume baseline.
+
+The gap is not subtle and it is not hypothetical: it is the difference between
+reporting sentiment as a contributing channel and reporting it as the least
+informative one. A cited principle demonstrated on one's own data is worth more
+than the citation alone.
+
+---
+
+## 2026-08-13 — A determinism guarantee that was documented but not in force
+
+`n_jobs=1` was chosen deliberately for bit-reproducibility, recorded in
+`CLAUDE.md`, and read from config at model-construction time. It was then
+**silently discarded**: `HistGradientBoostingClassifier` has no `n_jobs`
+parameter — it parallelises through OpenMP — so the value went nowhere.
+
+The exposure is real. Histogram reductions are summed in thread-completion
+order, so a machine with a different core count can differ in low-order bits
+and, on a knife-edge split, grow a different tree. The published numbers would
+not have been reproducible off this hardware.
+
+Two details worth recording:
+
+* **It was found by lint**, not by any result looking wrong. `ruff` flagged
+  `n_jobs` as an assigned-but-unused variable. No output was incorrect, no
+  score was suspicious, and no test failed.
+* **Re-running with threads pinned reproduced every figure exactly.** The
+  numbers were not thread-dependent on this machine. The fix therefore removes
+  a **latent** reproducibility risk rather than correcting an error.
+
+A guarantee that is documented, configured, and not actually in force is worse
+than one that was never claimed — it invites exactly the trust it does not
+earn.
+
+---
+
 ## 2026-08-13 — H1 result: fusion beats a weak volume baseline, not a strong one
 
 Full ablation, 129 units, prevalence 0.326. **Chance PR-AUC is 0.326**;
