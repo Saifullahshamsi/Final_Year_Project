@@ -1,0 +1,261 @@
+{
+  "n_units": 129,
+  "n_features": 35,
+  "prevalence": 0.32558139534883723,
+  "features": [
+    "window_tweets",
+    "unique_users",
+    "tweets_per_user",
+    "tweets_per_active_bin",
+    "active_bin_frac",
+    "n_nodes",
+    "n_edges",
+    "density",
+    "edges_per_tweet",
+    "max_in_degree",
+    "mean_in_degree",
+    "max_out_degree",
+    "n_components",
+    "largest_wcc_frac",
+    "mean_component_size",
+    "reciprocity",
+    "pagerank_gini",
+    "max_pagerank",
+    "mean_clustering",
+    "max_betweenness",
+    "mean_betweenness",
+    "betweenness_gini",
+    "max_core",
+    "mean_core",
+    "core2_frac",
+    "core3_frac",
+    "n_communities",
+    "modularity",
+    "largest_community_frac",
+    "community_entropy",
+    "node_growth_slope",
+    "edge_growth_slope",
+    "author_growth_slope",
+    "edge_node_ratio_final",
+    "new_author_frac_last_slice"
+  ],
+  "summary": {
+    "window_tweets": {
+      "mean_trending": 212.85714285714286,
+      "mean_non_trending": 46.18390804597701,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.8319649698960045
+    },
+    "unique_users": {
+      "mean_trending": 189.3095238095238,
+      "mean_non_trending": 35.804597701149426,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.8371647509578544
+    },
+    "tweets_per_user": {
+      "mean_trending": 1.1337371981114654,
+      "mean_non_trending": 1.2457187501077684,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.6201423097974822
+    },
+    "tweets_per_active_bin": {
+      "mean_trending": 12.069698788606352,
+      "mean_non_trending": 2.6599120594303147,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.858648056923919
+    },
+    "active_bin_frac": {
+      "mean_trending": 0.9167413935271078,
+      "mean_non_trending": 0.7747167611518523,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.7906403940886699
+    },
+    "n_nodes": {
+      "mean_trending": 250.26190476190476,
+      "mean_non_trending": 51.206896551724135,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.8212917350848385
+    },
+    "n_edges": {
+      "mean_trending": 123.45238095238095,
+      "mean_non_trending": 22.333333333333332,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.7887246852764094
+    },
+    "density": {
+      "mean_trending": 0.00538359732364053,
+      "mean_non_trending": 0.013607724372342993,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.7895457033388068
+    },
+    "edges_per_tweet": {
+      "mean_trending": 0.6550899811850288,
+      "mean_non_trending": 0.6159921277190281,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.5254515599343186
+    },
+    "max_in_degree": {
+      "mean_trending": 11.595238095238095,
+      "mean_non_trending": 3.5977011494252875,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.7557471264367817
+    },
+    "mean_in_degree": {
+      "mean_trending": 0.46062530850848366,
+      "mean_non_trending": 0.4389318408609786,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.5088943623426382
+    },
+    "max_out_degree": {
+      "mean_trending": 8.857142857142858,
+      "mean_non_trending": 4.517241379310345,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.6825396825396826
+    },
+    "n_components": {
+      "mean_trending": 149.57142857142858,
+      "mean_non_trending": 31.0,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.8340175150519978
+    },
+    "largest_wcc_frac": {
+      "mean_trending": 0.1836159455780622,
+      "mean_non_trending": 0.24851602169834003,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.5937328954570333
+    },
+    "mean_component_size": {
+      "mean_trending": 1.800334105257154,
+      "mean_non_trending": 2.659128585515573,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.5487137383689108
+    },
+    "reciprocity": {
+      "mean_trending": 0.013289246134700257,
+      "mean_non_trending": 0.004636337293538105,
+      "zero_frac": 0.8527131782945736,
+      "univariate_auc": 0.6862342638204707
+    },
+    "pagerank_gini": {
+      "mean_trending": 0.14577724804946154,
+      "mean_non_trending": 0.12756145171660654,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.6565407772304324
+    },
+    "max_pagerank": {
+      "mean_trending": 0.035778964459821816,
+      "mean_non_trending": 0.07392017863229716,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.7490421455938697
+    },
+    "mean_clustering": {
+      "mean_trending": 0.01800360778332295,
+      "mean_non_trending": 0.0005455473850203971,
+      "zero_frac": 0.7984496124031008,
+      "univariate_auc": 0.747400109469075
+    },
+    "max_betweenness": {
+      "mean_trending": 0.0021223548017874037,
+      "mean_non_trending": 0.00016277981181660227,
+      "zero_frac": 0.8062015503875969,
+      "univariate_auc": 0.59688013136289
+    },
+    "mean_betweenness": {
+      "mean_trending": 9.519389068619146e-05,
+      "mean_non_trending": 7.579272786515494e-06,
+      "zero_frac": 0.8062015503875969,
+      "univariate_auc": 0.5941434044882321
+    },
+    "betweenness_gini": {
+      "mean_trending": 0.32858375430834125,
+      "mean_non_trending": 0.12287764226999551,
+      "zero_frac": 0.8062015503875969,
+      "univariate_auc": 0.6163108921729612
+    },
+    "max_core": {
+      "mean_trending": 2.2142857142857144,
+      "mean_non_trending": 1.2298850574712643,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.7508210180623973
+    },
+    "mean_core": {
+      "mean_trending": 0.6446713559523113,
+      "mean_non_trending": 0.6093101309167096,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.5370826491516147
+    },
+    "core2_frac": {
+      "mean_trending": 0.07842643832784575,
+      "mean_non_trending": 0.03887615735162324,
+      "zero_frac": 0.627906976744186,
+      "univariate_auc": 0.7055281882868089
+    },
+    "core3_frac": {
+      "mean_trending": 0.017364169314221363,
+      "mean_non_trending": 0.0025354928232502404,
+      "zero_frac": 0.9147286821705426,
+      "univariate_auc": 0.5769020251778872
+    },
+    "n_communities": {
+      "mean_trending": 151.5952380952381,
+      "mean_non_trending": 31.32183908045977,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.8378489326765189
+    },
+    "modularity": {
+      "mean_trending": 0.7955937309800912,
+      "mean_non_trending": 0.6731397075667098,
+      "zero_frac": 0.031007751937984496,
+      "univariate_auc": 0.6908866995073891
+    },
+    "largest_community_frac": {
+      "mean_trending": 0.09616577961585356,
+      "mean_non_trending": 0.17023136248739235,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.7632731253420908
+    },
+    "community_entropy": {
+      "mean_trending": 4.140198365712273,
+      "mean_non_trending": 2.766018777204126,
+      "zero_frac": 0.023255813953488372,
+      "univariate_auc": 0.8347016967706623
+    },
+    "node_growth_slope": {
+      "mean_trending": 0.37966093257400313,
+      "mean_non_trending": 0.33516321481826156,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.6642036124794747
+    },
+    "edge_growth_slope": {
+      "mean_trending": 0.3695385761102892,
+      "mean_non_trending": 0.32755180127095757,
+      "zero_frac": 0.031007751937984496,
+      "univariate_auc": 0.5912698412698413
+    },
+    "author_growth_slope": {
+      "mean_trending": 0.3858643150872276,
+      "mean_non_trending": 0.3401933395306394,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.6907498631636563
+    },
+    "edge_node_ratio_final": {
+      "mean_trending": 0.46062530850848366,
+      "mean_non_trending": 0.44129754112772823,
+      "zero_frac": 0.0,
+      "univariate_auc": 0.5088943623426382
+    },
+    "new_author_frac_last_slice": {
+      "mean_trending": 0.32731572861626146,
+      "mean_non_trending": 0.23283708041283166,
+      "zero_frac": 0.015503875968992248,
+      "univariate_auc": 0.6566776135741653
+    }
+  },
+  "units_with_no_tweets": [],
+  "config_network": {
+    "betweenness_k": 100,
+    "growth_slices": 3,
+    "louvain_resolution": 1.0
+  },
+  "seed": 42
+}

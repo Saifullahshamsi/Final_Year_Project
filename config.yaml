@@ -85,6 +85,13 @@ language:
   es_majority_threshold: 0.5      # route-1 robustness check: es share of window
   negative_control_langs: null    # null = all; else e.g. ["es"]
 
+network:
+  # Betweenness is O(V*E) exact. Sample k pivots instead when the graph is
+  # larger than this; null forces exact everywhere.
+  betweenness_k: 100
+  growth_slices: 3                # sub-intervals for graph growth rate
+  louvain_resolution: 1.0
+
 model:
   n_jobs: 1                       # 1 core assumed; -1 caused thrashing
   cv_folds: 5
