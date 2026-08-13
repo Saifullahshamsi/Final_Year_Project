@@ -37,7 +37,7 @@ from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
 from src.data.loading import load_config
 from src.eval.size_audit import load_matrices
 from src.features.feature_sets import resolve, validate
-from src.models.fusion import build_estimator
+from src.models.fusion import build_estimator, single_threaded
 
 
 def arm_columns(cfg: dict, spec: dict) -> tuple[list[str], int]:
@@ -58,9 +58,13 @@ def oof_predictions(cfg: dict, X: np.ndarray, y: np.ndarray,
     cv = StratifiedGroupKFold(n_splits=cfg["model"]["cv_folds"], shuffle=True,
                               random_state=cfg["seed"])
     est = build_estimator(cfg, n_residualised=n_resid, kind=kind)
-    return cross_val_predict(est, X, y, cv=cv, groups=groups,
-                             method="predict_proba",
-                             n_jobs=cfg["model"]["n_jobs"])[:, 1]
+    # Threads pinned: HistGradientBoosting reduces histograms in thread order,
+    # so an unpinned run is not reproducible across machines with different
+    # core counts.
+    with single_threaded(cfg):
+        return cross_val_predict(est, X, y, cv=cv, groups=groups,
+                                 method="predict_proba",
+                                 n_jobs=cfg["model"]["n_jobs"])[:, 1]
 
 
 def bootstrap_ci(y: np.ndarray, p: np.ndarray, metric, n: int, seed: int):

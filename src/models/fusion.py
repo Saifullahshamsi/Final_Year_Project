@@ -51,8 +51,14 @@ class VolumeResidualiser(BaseEstimator, TransformerMixin):
 
 def make_model(cfg: dict, kind: str = "default"):
     """Gradient-boosted trees. `regularised` is the low-capacity variant used to
-    separate overfitting from fusion benefit."""
-    seed, n_jobs = cfg["seed"], cfg["model"]["n_jobs"]
+    separate overfitting from fusion benefit.
+
+    Note on `n_jobs`: HistGradientBoostingClassifier has no `n_jobs` parameter —
+    it parallelises through OpenMP, so passing one would be silently ignored and
+    the config's determinism guarantee would not actually hold. Thread count is
+    pinned at the call site with `single_threaded()` instead.
+    """
+    seed = cfg["seed"]
     common = dict(random_state=seed, early_stopping=False,
                   class_weight="balanced")
     if kind == "regularised":
@@ -74,5 +80,19 @@ def build_estimator(cfg: dict, n_residualised: int = 0,
     return model
 
 
+def single_threaded(cfg: dict):
+    """Context manager pinning BLAS/OpenMP to `model.n_jobs` threads.
+
+    `n_jobs=1` was chosen for determinism, not for speed. Without this the
+    choice would be nominal: HistGradientBoosting's histogram reductions are
+    summed in thread-completion order, so a machine with a different core count
+    can produce different low-order bits and, on knife-edge splits, different
+    trees. Pinning threads is what makes the recorded numbers reproducible on
+    other hardware.
+    """
+    from threadpoolctl import threadpool_limits
+    return threadpool_limits(limits=cfg["model"]["n_jobs"])
+
+
 __all__ = ["VolumeResidualiser", "make_model", "build_estimator",
-           "HistGradientBoostingClassifier", "Pipeline"]
+           "single_threaded", "HistGradientBoostingClassifier", "Pipeline"]
