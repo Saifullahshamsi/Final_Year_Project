@@ -276,19 +276,196 @@ distribution at 1× and 10× the tweet count and asserts that no feature moves.
 
 ---
 
+## 2026-08-13 — H1 result: fusion beats a weak volume baseline, not a strong one
+
+Full ablation, 129 units, prevalence 0.326. **Chance PR-AUC is 0.326**;
+chance ROC-AUC is 0.500. Out-of-fold predictions, 5-fold stratified CV grouped
+by topic, bootstrap CIs over 1,000 resamples.
+
+| arm | k | PR-AUC | 95% CI | ROC-AUC | F1 |
+|---|---|---|---|---|---|
+| chance | 0 | 0.326 | — | 0.500 | — |
+| volume_only | 3 | 0.649 | [0.509, 0.771] | 0.724 | 0.571 |
+| sentiment_only | 9 | 0.564 | [0.435, 0.745] | 0.783 | 0.617 |
+| temporal_only | 9 | 0.654 | [0.512, 0.789] | 0.764 | 0.622 |
+| structure_size_free | 10 | 0.689 | [0.551, 0.804] | 0.730 | 0.561 |
+| structure_residualised | 10 | 0.707 | [0.570, 0.819] | 0.802 | 0.593 |
+| volume_plus_sentiment | 12 | 0.789 | [0.673, 0.882] | 0.843 | 0.692 |
+| volume_plus_temporal | 12 | 0.783 | [0.669, 0.872] | 0.827 | 0.700 |
+| volume_plus_structure | 13 | 0.829 | [0.719, 0.910] | 0.869 | 0.709 |
+| **volume_extended** | 33 | **0.820** | [0.701, 0.912] | 0.889 | **0.780** |
+| full_fusion_regularised | 31 | 0.822 | [0.723, 0.904] | 0.855 | 0.667 |
+| **full_fusion** | 31 | **0.853** | [0.756, 0.927] | 0.891 | 0.727 |
+
+### The headline is a negative result
+
+**H1 claims the fused model significantly beats the best single-signal
+baseline. It does not.**
+
+The best single-signal baseline is **not** `volume_only`. It is
+`volume_extended` — still volume alone, but given every size-derived feature
+the audit exiled from the other channels. Against that opponent:
+
+| comparison | PR-AUC | McNemar p |
+|---|---|---|
+| full_fusion vs **volume_only** | 0.853 vs 0.649 | **0.0059** |
+| full_fusion vs **volume_extended** | 0.853 vs 0.820 | **0.6636** |
+| volume_plus_structure vs volume_extended | 0.829 vs 0.820 | 0.4244 |
+
+Fusion beats the three-feature baseline decisively and the full volume baseline
+not at all. Confidence intervals overlap almost completely, and
+`volume_extended` actually posts the **best F1 of any arm (0.780)**.
+
+Reporting only the first row would have been the easy result and it would have
+been misleading. Choosing a weak opponent is the most common way a fusion claim
+passes.
+
+### What *is* supported
+
+Each channel adds to volume individually — all three paired tests clear 0.05:
+
+| comparison | McNemar p |
+|---|---|
+| volume_only vs volume_plus_structure | 0.0241 |
+| volume_only vs volume_plus_sentiment | 0.0169 |
+| volume_only vs volume_plus_temporal | 0.0290 |
+
+So the channels carry information the minimal volume baseline lacks. What they
+do **not** carry is information beyond what a well-specified volume model
+already captures. The most defensible reading: on this corpus, at this window
+size, the three channels are largely **re-encoding volume** rather than adding
+independent signal — which is exactly what the size-proxy audit found at the
+feature level, now confirmed at the model level.
+
+### The prototype's negative result replicates
+
+`volume_only` vs `structure_size_free`: **21 discordant each way, p = 1.0000.**
+Network structure does not beat volume alone. The prototype found the same
+thing (Wilcoxon p = 0.81 as recorded, 0.96 on re-run) with a different unit
+definition, a different volume control and a different model family. Two
+independent designs, same conclusion.
+
+### Robustness checks
+
+* **Residualisation does not change the story.** `structure_residualised`
+  (0.707) vs `structure_size_free` (0.689), McNemar p = 0.6776. The
+  conservative exile and the less-conservative residualisation agree, so the
+  conclusion is not an artifact of how the volume confound was handled. The
+  residualised arm is the *less* conservative one and is not the headline.
+* **Overfitting is present but not decisive.** `full_fusion` (0.853) vs
+  `full_fusion_regularised` (0.822), p = 0.0923, 10 units correct only under
+  the unregularised model against 3 the other way. With **31 features against
+  42 positive cases — close to one parameter per positive** — the unregularised
+  arm should be read with that ratio in mind. The gap is evidence about
+  capacity, not about fusion.
+* **PR-AUC versus ROC-AUC diverges exactly as predicted.** `sentiment_only`
+  scores ROC-AUC 0.783 but PR-AUC 0.564. On ROC alone it would look like a
+  solid channel; against a chance PR-AUC of 0.326 it is the weakest arm in the
+  study. This is the concrete case for the headline-metric choice.
+
+### Caveats stated rather than buried
+
+129 units and 42 positives. Every CI is wide, the folds are small, and effects
+smaller than roughly 0.1 PR-AUC are not detectable here. `full_fusion` may
+genuinely be better than `volume_extended` — this study cannot show it.
+"Not significant" is not "no difference".
+
+---
+
+## 2026-08-13 — Why the prototype's best network features do not survive here
+
+**This single explanation links the two studies and accounts for why their
+numbers differ. It belongs in the report as its own subsection.**
+
+The prototype's two strongest network features were `reciprocity` (univariate
+AUC 0.66, RF importance 0.073) and `mean_clustering` (0.64). In this pipeline
+both were **removed from the structure arm** because they correlate with window
+volume at ρ = +0.447 and +0.556.
+
+They were not wrong there and right here. **They were sound there and unsound
+here, and the difference is a single design choice.**
+
+| | prototype | this pipeline |
+|---|---|---|
+| unit of observation | earliest **fixed 150 tweets** per topic | variable-length **pre-peak window** |
+| tweets per graph | identical by construction | 15 to 1,308 |
+| volume as a confound | **controlled by design** | present and must be measured out |
+| pre-peak guarantee | none — "early" is a proxy | window closes at peak − lead |
+
+Holding the tweet count fixed makes every graph the same size, so any
+difference in reciprocity or clustering between two topics *cannot* be a
+difference in volume. The measure is volume-controlled by construction.
+
+A pre-peak window cannot do that. Its length is fixed in *time*, not in tweets,
+because the whole point is to observe a fixed lead before the peak. Volume
+therefore varies by two orders of magnitude across units, and any feature whose
+value depends on graph density inherits it.
+
+**Three consequences worth stating plainly.**
+
+1. **The prototype's design was doing more work than it appeared to.** The
+   fixed-150 choice was documented as being about comparability and about
+   isolating structure. It was also, unremarked, the reason its structural
+   features were interpretable at all. That is a stronger justification for the
+   choice than the one originally given.
+2. **The exchange was real and it had a price.** Trading fixed-K for a genuine
+   pre-peak window bought the central claim of the project — prediction before
+   peak rather than early detection — and cost the volume control that made the
+   prototype's best structural features clean.
+3. **The two sets of numbers are not comparable and must never be tabled
+   together.** Different units, different volume control, different prevalence
+   (0.528 balanced vs 0.326 observed). They are reported separately throughout.
+
+---
+
 ## 2026-08-13 — Normalising a count series does not make it scale-free
 
 Every temporal feature was divided by its own window level specifically to be
 scale-free. **Twelve of them still tracked volume**, and the audit caught it
 because the audit is now a measurement rather than an argument.
 
-**The mechanism, which generalises well beyond this project.** For count data,
-dividing by the mean does not remove size dependence, because the *noise* also
-scales with the mean. Under a Poisson process the coefficient of variation goes
-as `1/√mean`, so a "normalised dispersion" measure is a disguised inverse
-volume. Sparse windows separately produce more empty bins, so every entropy,
-Gini, zero-share and monotonicity measure inherits volume through the
-discretisation.
+### The mechanism, spelled out
+
+For a Poisson count process with rate λ per bin, the mean is λ and the variance
+is **also** λ. So the standard deviation is √λ, and the coefficient of
+variation is
+
+```
+CV = σ/μ = √λ / λ = 1/√λ
+```
+
+Dividing a count series by its own mean removes the *scale* but not the
+*noise*, because for counts the noise is a function of the scale. A window
+averaging 4 tweets per bin has an expected CV of 0.50 purely from sampling; a
+window averaging 100 has 0.10. **Any "normalised dispersion" feature is
+therefore a disguised measure of inverse volume**, and will separate a
+large-count class from a small-count class with no underlying difference in
+process whatsoever.
+
+A second, independent route runs through discretisation: low counts produce
+empty bins. Zero-share is directly a function of λ; entropy is bounded above by
+the log of the number of *non-empty* bins; Gini and monotonicity are both
+distorted by ties at zero. Every one of those inherits volume without any
+dispersion argument at all.
+
+Neither route is visible in the algebra. `std/mean` looks scale-free. It is
+not, for counts.
+
+### The general rule
+
+> **A feature's algebraic form does not tell you whether it encodes sample
+> size. Only its measured correlation with sample size does.**
+
+This is the most transferable result the project has produced. It applies to
+any study comparing groups that differ in sample size — which is most
+observational work — and it defeats the usual defence of "but it's a ratio, so
+it's normalised". Ratios of counts are not normalised with respect to counts.
+
+The operational form is cheap: correlate every candidate feature against the
+sample-size variable (Spearman, so monotone-but-nonlinear proxies are caught),
+fix the threshold *before* looking, and reassign anything above it. In this
+project that check moved twelve features across three channels, four of which
+had already been cleared by formula-level reasoning.
 
 Measured Spearman correlation with window volume:
 

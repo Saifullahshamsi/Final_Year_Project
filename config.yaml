@@ -223,6 +223,15 @@ ablation:
     sets: [sentiment]
   - name: volume_plus_sentiment
     sets: [volume_baseline, sentiment]
+  # ADDITIONAL arm, never a replacement for structure_size_free. Regresses each
+  # structure feature on the volume proxy and keeps the residual, recovering
+  # signal from features that exile discards. It is the LESS CONSERVATIVE arm
+  # and must not be read as the headline: report both, and if they disagree the
+  # gap is the finding rather than something to resolve by preference.
+  # The regression is fitted inside each CV fold on training data only.
+  - name: structure_residualised
+    sets: [structure_size_free, size_dependent]
+    residualise: structure_size_free
   - name: temporal_only
     sets: [temporal]
   - name: volume_plus_temporal
@@ -230,6 +239,12 @@ ablation:
   # H1: does fusing all three channels beat the best single-signal baseline?
   - name: full_fusion
     sets: [volume_baseline, structure_size_free, sentiment, temporal]
+  # Same features, heavily regularised. 31 features against ~42 positive cases
+  # is close to one parameter per positive; the gap between these two arms is
+  # evidence about overfitting, not about fusion.
+  - name: full_fusion_regularised
+    sets: [volume_baseline, structure_size_free, sentiment, temporal]
+    model: regularised
   - name: volume_extended
     sets: [volume_baseline, size_dependent, temporal_size_dependent]
 
@@ -241,6 +256,31 @@ ablation:
 # at or above this threshold is reassigned to volume.
 audit:
   size_proxy_spearman_threshold: 0.4
+  # One declared proxy for volume, used for every audit and every
+  # residualisation. Never chosen per feature.
+  volume_proxy: window_tweets
+
+evaluation:
+  decision_threshold: 0.5         # for F1 / precision / recall / McNemar
+  # Paired comparisons. McNemar on out-of-fold binary predictions.
+  mcnemar_pairs:
+    - [volume_only, structure_size_free]
+    - [volume_only, sentiment_only]
+    - [volume_only, temporal_only]
+    - [volume_only, volume_plus_structure]
+    - [volume_only, volume_plus_sentiment]
+    - [volume_only, volume_plus_temporal]
+    - [volume_only, full_fusion]
+    - [structure_size_free, structure_residualised]
+    - [full_fusion, full_fusion_regularised]
+    - [volume_only, volume_extended]
+    # THE H1 TEST. H1 claims fusion beats the best SINGLE-SIGNAL baseline, and
+    # the best single-signal baseline is not volume_only (3 features) — it is
+    # volume_extended, which is still volume alone but given every size-derived
+    # feature the audit exiled. Comparing fusion only against the 3-feature
+    # baseline would be choosing a weak opponent.
+    - [full_fusion, volume_extended]
+    - [volume_plus_structure, volume_extended]
 
 sentiment:
   model: cardiffnlp/twitter-xlm-roberta-base-sentiment
