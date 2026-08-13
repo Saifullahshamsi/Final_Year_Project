@@ -1,0 +1,18 @@
+{
+  "feature_language": "es",
+  "n_units": 129,
+  "tweets_primary_window": 12958,
+  "tweets_primary_by_class": {
+    "trending": 8940,
+    "non_trending": 4018
+  },
+  "distinct_texts_primary": 10656,
+  "tweets_lead_sweep_union": 25286,
+  "distinct_texts_lead_sweep": 20505,
+  "chars_mean": 151.56984102484952,
+  "chars_p95": 289.0,
+  "chars_max": 877,
+  "est_tokens_mean_low": 37.89246025621238,
+  "est_tokens_mean_high": 47.36557532026547,
+  "frac_over_128_tokens": 0.0025466893039049238
+}
