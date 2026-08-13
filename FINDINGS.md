@@ -149,7 +149,9 @@ This validation uses positives only and never feeds the filter.
 ## 2026-08-08 — Left-censoring is symmetric in rule, asymmetric in effect
 
 At the first primary setting the left-censoring filter dropped **109 positives
-and 0 negatives**.
+and 0 negatives**. **At the final parameters it drops 132 positives and 1
+negative** — the asymmetry widened rather than resolved, and the final figures
+are the ones that describe this pipeline.
 
 The rule is identical for both classes. The asymmetry is real: negatives are
 small hashtags that are never running hot at 16:00 relative to their own peak,
@@ -205,6 +207,107 @@ only. It is stated here explicitly so it is not read as a suppressed arm.
 
 **Discovering that a planned control cannot be run, and substituting one that
 can, is itself a result.** It is recorded here rather than quietly dropped.
+
+---
+
+## 2026-08-13 — Two leaks caught inside our own feature set
+
+Both were found by inspecting features before modelling, not after a
+suspiciously good score. Both are recorded because a caught leak is a stronger
+evaluation result than a clean number.
+
+### `betweenness_exact` — a metadata flag that separated the classes at AUC 0.793
+
+Betweenness is O(V·E) exact, so above a node threshold the implementation
+samples pivots instead and recorded which algorithm ran. That flag was emitted
+into the feature matrix.
+
+It is a **deterministic function of graph size** — 1 for small graphs, 0 for
+large — so it inherited the class separation of `n_nodes` wholesale and scored
+**AUC 0.793**, eighth-best of 36 features, while measuring nothing whatsoever
+about diffusion.
+
+Moved to metadata. `tests/test_network.py` now fails if any size-derived or
+whole-topic quantity reaches the matrix, and `src/features/feature_sets.py`
+independently re-checks the structure arm by name.
+
+### `total_count` — the prototype's top feature is contaminated by the target
+
+The prototype's single strongest feature was `total_count`, the topic's tweet
+count **over the entire day** (RF importance 0.276, more than triple the next
+feature). In a pre-peak design that is leakage: an all-day total is largely
+determined by the size of the peak the model is supposed to predict.
+
+Excluded here. All volume features are computed from the pre-peak window alone,
+and unit metadata carries a `meta_` prefix so it cannot be selected by accident.
+
+**This partly reframes the prototype's volume-only baseline.** That baseline
+scored ROC-AUC 0.774 with a target-contaminated feature doing most of the work,
+so it was not a fair "volume" comparator — it was closer to a partial oracle.
+The prototype's headline finding (network does not beat volume) is therefore
+measured against an inflated opponent, which makes the negative result *more*
+conservative, not less. The prototype numbers stand as recorded; this pipeline
+does not repeat the mistake.
+
+---
+
+## 2026-08-13 — Size proxies wearing structural names
+
+On these graphs the highest-AUC "structural" features are node counts.
+
+| feature | AUC | mean (trending) | mean (non-trending) |
+|---|---|---|---|
+| `n_nodes` | 0.821 | 250.3 | 51.2 |
+| `n_components` | 0.834 | 149.6 | 31.0 |
+| `n_communities` | 0.838 | 151.6 | 31.3 |
+| `community_entropy` | 0.835 | 4.14 | 2.77 |
+
+The windows produce heavily fragmented graphs, so most nodes sit in their own
+component and their own community. Component count, community count and node
+count are the same quantity three times.
+
+The mirror image also holds: `density` (0.005 vs 0.014), `max_pagerank` (0.036
+vs 0.074), `largest_wcc_frac` (0.184 vs 0.249) and `largest_community_frac`
+(0.096 vs 0.170) are all mechanically ~1/N and run *higher* for the smaller
+non-trending graphs. They are size with the sign flipped.
+
+**Consequence for the ablation.** Feature-set assignment is now explicit in
+`config.yaml` and enforced in code. The rule: anything that scales with tweets
+or nodes is volume, and **where assignment is arguable it goes to volume**,
+because that is the direction that makes H1 harder to pass. The size-free
+structure arm holds 14 scale-invariant features — ratios, bounded fractions,
+normalised inequality measures, and growth slopes normalised by their own final
+value. Zero raw counts.
+
+Arms: chance → volume_only (3) → structure_size_free (14) →
+volume_plus_structure (17, the H1 test) → volume_extended (21).
+
+---
+
+## 2026-08-13 — Sparse graphs: the added structure has little to bite on
+
+At a 90-minute window the interaction graphs are mostly disconnected star
+fragments. Non-trending windows average 46 Spanish tweets.
+
+Share of units where the feature is exactly zero:
+
+| feature | zero |
+|---|---|
+| `core3_frac` | 91.5% |
+| `reciprocity` | 85.3% |
+| `max_betweenness` / `mean_betweenness` | 80.6% |
+| `mean_clustering` | 79.8% |
+| `core2_frac` | 62.8% |
+
+**This is a constraint of the window size, not a modelling failure.** Mentions
+and replies are sparse over 90 minutes for topics this small, so betweenness
+(best univariate AUC 0.597) and the deeper k-core features are near-degenerate.
+
+**The distinction matters for the report:** if the structure arm underperforms,
+that is evidence about *sample geometry* — 129 small, fragmented graphs — and
+not evidence that interaction structure carries no signal about emergence. The
+two claims are different, and only the first is supported by this corpus. The
+window-length sensitivity analysis is what separates them empirically.
 
 ---
 

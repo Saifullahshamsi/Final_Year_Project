@@ -85,6 +85,86 @@ language:
   es_majority_threshold: 0.5      # route-1 robustness check: es share of window
   negative_control_langs: null    # null = all; else e.g. ["es"]
 
+# ---------------------------------------------------------------------------
+# Feature-set assignment for the ablation.
+#
+# RULE: any feature whose value scales with the number of tweets or nodes in
+# the window is VOLUME, not structure. Where the assignment is arguable it goes
+# to volume — the conservative direction is the one that makes H1 harder to
+# pass, so a positive result cannot be an artifact of shelving a node count in
+# the structure arm.
+#
+# This matters because on these fragmented graphs n_components (149.6 vs 31.0)
+# and n_communities (151.6 vs 31.3) track n_nodes (250.3 vs 51.2) almost
+# exactly. They are node counts wearing structural names and are assigned to
+# volume accordingly. Features that are mechanically ~1/N (density,
+# max_pagerank, largest_wcc_frac, largest_community_frac) are inverse-size for
+# the same reason and are also volume.
+#
+# Every feature column must appear in exactly one list; src/features/
+# feature_sets.py fails loudly otherwise.
+# ---------------------------------------------------------------------------
+features:
+  # The minimal volume baseline H1 must beat.
+  volume_baseline:
+    - window_tweets
+    - unique_users
+    - tweets_per_active_bin
+
+  # Structural in name, size-driven in fact. Reported, and available as an
+  # extended-volume arm, but never counted as structure.
+  size_dependent:
+    - active_bin_frac
+    - n_nodes
+    - n_edges
+    - n_components
+    - n_communities
+    - community_entropy
+    - mean_component_size
+    - density
+    - largest_wcc_frac
+    - largest_community_frac
+    - max_pagerank
+    - max_in_degree
+    - mean_in_degree
+    - max_out_degree
+    - max_core
+    - mean_core
+    - max_betweenness
+    - mean_betweenness
+
+  # Scale-invariant: ratios, bounded fractions, normalised inequality measures
+  # and growth slopes normalised by their own final value. Zero raw counts.
+  structure_size_free:
+    - tweets_per_user
+    - edges_per_tweet
+    - edge_node_ratio_final
+    - reciprocity
+    - pagerank_gini
+    - betweenness_gini
+    - mean_clustering
+    - modularity
+    - core2_frac
+    - core3_frac
+    - node_growth_slope
+    - edge_growth_slope
+    - author_growth_slope
+    - new_author_frac_last_slice
+
+# Ablation hierarchy. Each arm names feature-set keys from `features` above.
+# volume_plus_structure vs volume_only is the H1 test.
+ablation:
+  - name: chance
+    sets: []
+  - name: volume_only
+    sets: [volume_baseline]
+  - name: structure_size_free
+    sets: [structure_size_free]
+  - name: volume_plus_structure
+    sets: [volume_baseline, structure_size_free]
+  - name: volume_extended
+    sets: [volume_baseline, size_dependent]
+
 network:
   # Betweenness is O(V*E) exact. Sample k pivots instead when the graph is
   # larger than this; null forces exact everywhere.
