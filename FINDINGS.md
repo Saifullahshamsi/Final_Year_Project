@@ -311,6 +311,178 @@ window-length sensitivity analysis is what separates them empirically.
 
 ---
 
+## 2026-08-13 — The conservative assignment rule cost four features, and was applied anyway
+
+When the size-free structure arm was defined, `density`, `max_pagerank`,
+`largest_wcc_frac` and `largest_community_frac` had all been described — by me,
+one step earlier — as size-independent structural features on the strength of
+being ratios and bounded fractions.
+
+They are not. On fragmented graphs all four are mechanically ~1/N, and all four
+run *higher* for the smaller non-trending graphs (`density` 0.005 vs 0.014,
+`max_pagerank` 0.036 vs 0.074, `largest_wcc_frac` 0.184 vs 0.249,
+`largest_community_frac` 0.096 vs 0.170). Being a ratio is not the same as
+being scale-free.
+
+Under the rule — *where assignment is arguable, it goes to volume* — all four
+moved out of the structure arm, taking `largest_community_frac` (AUC 0.763) and
+`max_pagerank` (0.749) with them, two of the strongest apparently-structural
+separators.
+
+**That is the rule working as intended.** It makes H1 harder to pass. A
+structure arm assembled from quantities that quietly encode node count could
+produce "structure beats volume" arithmetically; one assembled under this rule
+cannot, which is precisely what would give a positive result its value.
+
+---
+
+## 2026-08-13 — Three measurements that contradicted the obvious assumption
+
+### int8 quantization would have turned the sentiment channel into noise
+
+The standard assumption is that int8 dynamic quantization is roughly free on
+CPU — large speedup, negligible accuracy cost. Benchmarked on 400 real Spanish
+tweets from this corpus:
+
+| | throughput | agreement with fp32 |
+|---|---|---|
+| fp32, batch 16, length-sorted | 35.2 tweets/s | — |
+| int8 dynamic, batch 32, sorted | 39.5 tweets/s | **41.4%** |
+
+**12% faster, and it agrees with the full-precision model on 41.4% of labels —
+barely above the 33% chance rate for three classes.** Dynamic quantization
+destroys this model.
+
+**Counterfactual, and the reason this is worth recording:** had the assumption
+been taken rather than tested, every sentiment feature in the fusion model
+would have been noise, and nothing downstream would have looked wrong. The
+channel would simply have failed to contribute, and that failure would have
+been reported as a finding about sentiment rather than a bug in the pipeline.
+Rejected on measurement.
+
+### Length-sorting beats batching, and the bigger batch is slower
+
+| config | tweets/s |
+|---|---|
+| batch 16, unsorted | 26.1 |
+| **batch 16, length-sorted** | **35.2** |
+| batch 32, unsorted | 22.8 |
+| batch 32, length-sorted | 29.3 |
+
+Sorting by length before batching gives **+35%**, because padding is charged
+per batch and mixed-length batches pad short tweets up to the longest one.
+Doubling the batch size makes throughput *worse* — the opposite of the usual
+expectation — since wider batches gather a broader length spread and pad more.
+Small sorted batches win.
+
+### A substring bug in my own validator
+
+The check that keeps raw counts out of the size-free structure arm matched
+banned names by substring. `mean_clustering` contains `n_`, so the validator
+rejected a legitimate scale-free feature. Fixed to prefix matching plus an
+explicit name list.
+
+This is the **second defect found in checking code rather than in the pipeline**
+— the first being `betweenness_exact`, a metadata flag emitted as a feature.
+Both were caught by running the checks and reading the output rather than
+trusting that a guard works because it exists.
+
+---
+
+## 2026-08-13 — A third count reached a feature matrix: `sent_n`
+
+The sentiment channel's first run emitted `sent_n`, the number of scored tweets
+in each window, alongside the nine sentiment aggregates. Its class means were
+**212.857 vs 46.184 — identical to the volume feature `window_tweets`** — and
+it scored **AUC 0.832**, more than any real sentiment feature.
+
+It is not a sentiment feature. It is `window_tweets` under another name, and in
+a `sentiment_only` ablation arm it would have credited volume to sentiment,
+making the sentiment channel look like the second-strongest signal in the
+project.
+
+Moved to `meta_sent_n`. Two tests now guard it: one asserts the count is
+metadata and that the config's sentiment set matches exactly the emitted
+`sent_*` features; the other feeds the same probability distribution at 1× and
+10× the tweet count and asserts every sentiment feature is unchanged.
+
+**This is the third instance of the same failure mode** — after
+`betweenness_exact` and `total_count` — and the pattern is now clear enough to
+state as a methodological point: *on an imbalanced corpus where the classes
+differ in size, any quantity that scales with sample size will separate the
+classes, and will do so through a name that sounds like it measures something
+else.* Every channel in this project needed the same audit, and each one had a
+case.
+
+---
+
+## 2026-08-13 — Sentiment signal is real but weak; the strongest is disagreement
+
+XLM-T over 20,505 distinct Spanish tweets, 100% window coverage (median 30
+tweets per window, min 15, max 1,308).
+
+| feature | trending | non-trending | AUC |
+|---|---|---|---|
+| `sent_polarisation` | 0.318 | 0.215 | **0.673** |
+| `sent_var` | 0.236 | 0.187 | **0.670** |
+| `sent_neg_frac` | 0.314 | 0.275 | 0.596 |
+| `sent_mean` | −0.078 | −0.020 | 0.588 |
+| `sent_intensity` | 0.566 | 0.535 | 0.579 |
+| `sent_neu_frac` | 0.464 | 0.511 | 0.578 |
+| `sent_skew` | −0.127 | −0.105 | 0.528 |
+
+**The two strongest features measure disagreement, not mood.** `sent_var` and
+`sent_polarisation` (the share of the window in the smaller of the positive and
+negative camps, doubled) both beat every measure of average sentiment.
+Emerging topics are more *contested*, not simply more negative — though they
+are slightly more negative too.
+
+That ordering is a substantive finding, and it is the reason `sent_polarisation`
+was defined at all: mean polarity cannot distinguish a split crowd from a calm
+one, since both average to zero.
+
+No individual sentiment feature is strong. Whether the channel contributes is
+an ablation question, not a univariate one.
+
+---
+
+## 2026-08-13 — VADER covers too few negatives to be an arm
+
+VADER was specified as an English-subset baseline. Measured coverage over the
+final 129 units:
+
+| | |
+|---|---|
+| units with any English tweet in window | **44 of 129** |
+| — trending | 34 |
+| — **non-trending** | **10** |
+| English tweets scored | 19,148 |
+| median English tweets per covered unit | 47.5 |
+
+**Ten negative units cannot support an ablation arm**, and the covered subset is
+77% positive against a corpus prevalence of 32.6% — the coverage itself is
+confounded with the label, because trending topics are the multilingual ones.
+
+Worth being precise about what VADER is scoring: the main channel is filtered
+to Spanish, so VADER is not a second opinion on the same tweets. It scores a
+**different tweet population, in a different language, drawn disproportionately
+from the positive class.** It is reported as a descriptive check on the English
+remainder, never as a baseline the fusion model is compared against.
+
+---
+
+## 2026-08-13 — Sentiment model pinned to an exact revision
+
+`cardiffnlp/twitter-xlm-roberta-base-sentiment`, revision
+**`f2f1202b1bdeb07342385c3f807f9c07cd8f5cf8`**, recorded in `config.yaml`.
+
+HuggingFace `main` can move at any time. Unpinned, a re-run months later could
+produce different sentiment numbers for identical inputs with nothing in the
+repository to explain the change. Pinning costs nothing and makes every
+sentiment figure traceable to one model version.
+
+---
+
 ## 2026-08-08 — Sample size: contingency level reached
 
 The strict setting (1-hour lead, 60-min window, ≥100 tweets) yields **88 units**

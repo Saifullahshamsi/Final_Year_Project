@@ -124,7 +124,7 @@ def main() -> int:
     for q in (50, 75, 90, 95, 99, 100):
         print(f"    p{q:<3}                             {int(np.percentile(chars, q))}")
     print(f"    mean                             {chars.mean():.0f}")
-    print(f"\n  estimated tokens/tweet (3.2-4.0 chars per token)")
+    print("\n  estimated tokens/tweet (3.2-4.0 chars per token)")
     print(f"    mean                             {tok_lo.mean():.0f} - {tok_hi.mean():.0f}")
     print(f"    p95                              {int(np.percentile(tok_lo,95))} - "
           f"{int(np.percentile(tok_hi,95))}")

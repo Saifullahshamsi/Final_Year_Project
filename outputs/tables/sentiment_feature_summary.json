@@ -1,0 +1,66 @@
+{
+  "model": "cardiffnlp/twitter-xlm-roberta-base-sentiment",
+  "revision": "f2f1202b1bdeb07342385c3f807f9c07cd8f5cf8",
+  "feature_language": "es",
+  "n_units": 129,
+  "units_with_scores": 129,
+  "distinct_texts_scored": 20505,
+  "cache_entries": 20505,
+  "summary": {
+    "sent_mean": {
+      "mean_trending": -0.07766424842016988,
+      "mean_non_trending": -0.020029141764082905,
+      "univariate_auc": 0.5878489326765188
+    },
+    "sent_var": {
+      "mean_trending": 0.23630459535421283,
+      "mean_non_trending": 0.18727028230945744,
+      "univariate_auc": 0.6704980842911877
+    },
+    "sent_intensity": {
+      "mean_trending": 0.5658078354347987,
+      "mean_non_trending": 0.5348943817766377,
+      "univariate_auc": 0.578544061302682
+    },
+    "sent_strong_frac": {
+      "mean_trending": 0.3609543922520713,
+      "mean_non_trending": 0.3376879991743078,
+      "univariate_auc": 0.5573344280240832
+    },
+    "sent_pos_frac": {
+      "mean_trending": 0.22124927017599158,
+      "mean_non_trending": 0.21341030040749515,
+      "univariate_auc": 0.541735084838533
+    },
+    "sent_neg_frac": {
+      "mean_trending": 0.31432616030825816,
+      "mean_non_trending": 0.27532535776622763,
+      "univariate_auc": 0.5957854406130267
+    },
+    "sent_neu_frac": {
+      "mean_trending": 0.46442456951575023,
+      "mean_non_trending": 0.5112643418262773,
+      "univariate_auc": 0.5781335522714833
+    },
+    "sent_skew": {
+      "mean_trending": -0.12687153534107168,
+      "mean_non_trending": -0.10490388666190997,
+      "univariate_auc": 0.5279146141215106
+    },
+    "sent_polarisation": {
+      "mean_trending": 0.318440273390523,
+      "mean_non_trending": 0.21529855103540502,
+      "univariate_auc": 0.6726874657909141
+    }
+  },
+  "vader_coverage": {
+    "available": true,
+    "units_with_any_english": 44,
+    "units_total": 129,
+    "english_tweets_scored": 19148,
+    "units_trending": 34,
+    "units_non_trending": 10,
+    "median_english_tweets_per_unit": 47.5
+  },
+  "seed": 42
+}

@@ -133,6 +133,21 @@ features:
     - max_betweenness
     - mean_betweenness
 
+  # XLM-T aggregates. All are means, fractions or moments — nothing scales with
+  # tweet count. The scored-tweet count is emitted as meta_sent_n and excluded:
+  # it is numerically identical to window_tweets (AUC 0.832), so modelling it
+  # here would credit volume to sentiment.
+  sentiment:
+    - sent_mean
+    - sent_var
+    - sent_intensity
+    - sent_strong_frac
+    - sent_pos_frac
+    - sent_neg_frac
+    - sent_neu_frac
+    - sent_skew
+    - sent_polarisation
+
   # Scale-invariant: ratios, bounded fractions, normalised inequality measures
   # and growth slopes normalised by their own final value. Zero raw counts.
   structure_size_free:
@@ -162,8 +177,47 @@ ablation:
     sets: [structure_size_free]
   - name: volume_plus_structure
     sets: [volume_baseline, structure_size_free]
+  - name: sentiment_only
+    sets: [sentiment]
+  - name: volume_plus_sentiment
+    sets: [volume_baseline, sentiment]
   - name: volume_extended
     sets: [volume_baseline, size_dependent]
+  # Full fusion is added once the temporal channel exists.
+
+sentiment:
+  model: cardiffnlp/twitter-xlm-roberta-base-sentiment
+  # PINNED. HuggingFace `main` can move under us and silently change every
+  # sentiment number in the report. This is the commit the results were
+  # produced with.
+  revision: f2f1202b1bdeb07342385c3f807f9c07cd8f5cf8
+  labels: [negative, neutral, positive]
+
+  # Measured on 400 real Spanish tweets from this corpus, not assumed:
+  #   batch 16 length-sorted  35.2 tweets/s   <- chosen
+  #   batch 16 unsorted       26.1
+  #   batch 32 length-sorted  29.3            <- larger batch is SLOWER
+  # int8 dynamic quantization was rejected: only 12% faster and agreed with
+  # fp32 on 41.4% of labels, barely above chance for three classes.
+  batch_size: 16
+  max_length: 128                 # only 0.3% of tweets exceed this
+  sort_by_length: true
+  dtype: float32                  # do NOT quantize; see above
+
+  # Cache holds the raw 3-class probabilities keyed by text hash, so
+  # aggregates can be redefined without re-running the model. Scored over the
+  # union of all lead-sweep windows, not just the primary one.
+  cache_file: sentiment_scores.parquet
+  cache_over_lead_sweep: true
+
+  strong_threshold: 0.6           # |polarity| above this counts as strongly affective
+
+  vader:
+    enabled: true
+    # English-subset baseline only. Route 2 filters features to Spanish, so
+    # VADER scores a different tweet population; coverage is reported and it is
+    # a descriptive check, never an ablation arm.
+    language: en
 
 network:
   # Betweenness is O(V*E) exact. Sample k pivots instead when the graph is

@@ -68,7 +68,17 @@ The non-trending pool was collected in **two disjoint blocks** (00:00–00:59 an
 - The prototype under `prototype/` is **frozen** as a reference. Its numbers are reproduced by re-running it with path edits only. The new pipeline reports its own numbers separately. **Do not tune toward 0.868.**
 
 ### Memory / compute constraints
-Files are too big to load whole. **Always stream with `pd.read_csv(..., chunksize=300_000, usecols=[...], dtype=str)`.** Assume low RAM (~4 GB) and possibly **1 CPU core** — set `n_jobs=1` in sklearn; `n_jobs=-1` caused thrashing during prototype work. Cache expensive intermediates to disk (especially sentiment scores).
+
+Files are too big to load whole. **Always stream with `pd.read_csv(..., chunksize=300_000, usecols=[...], dtype=str)`,** and cache expensive intermediates to disk (especially sentiment scores). Streaming is about the 1.2 GB files, not about the machine, so it stays regardless.
+
+**Hardware — corrected 2026-08-13.** An earlier note assumed ~4 GB RAM and possibly 1 CPU core. Verified actual spec: **Intel i9-13900H, 14 cores / 20 threads, 15.6 GB RAM, 255 GB free disk.** A full streaming pass over either CSV takes ~8 s; XLM-T scores 35.2 tweets/s. Runtime is not a binding constraint on this project.
+
+**`n_jobs=1` stays — as a deliberate choice, not a hardware necessity.** Reasons, in order:
+1. **Determinism.** Parallel folds can reorder floating-point reductions, and CV results must be bit-reproducible for the report.
+2. **Nothing to gain.** 129 units and a ~10-minute sentiment pass; parallelism buys no time worth the reproducibility cost.
+3. **CI honesty.** The workflow runs on a small shared runner, so tests must assume modest hardware regardless of the development machine.
+
+A wrong stated constraint is worse than no stated constraint — the original note would have justified rejecting XLM-T on a cost estimate that was an order of magnitude too pessimistic.
 
 ---
 
