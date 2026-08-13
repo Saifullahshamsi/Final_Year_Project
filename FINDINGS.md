@@ -210,79 +210,168 @@ can, is itself a result.** It is recorded here rather than quietly dropped.
 
 ---
 
-## 2026-08-13 — Two leaks caught inside our own feature set
+## 2026-08-13 — The size-proxy failure mode (the project's main methodological finding)
 
-Both were found by inspecting features before modelling, not after a
-suspiciously good score. Both are recorded because a caught leak is a stronger
-evaluation result than a clean number.
+**The rule, stated generally:**
 
-### `betweenness_exact` — a metadata flag that separated the classes at AUC 0.793
+> On classes that differ in size, *any* quantity that scales with sample size
+> will separate them — and it will do so under a name that sounds like it
+> measures something else.
 
-Betweenness is O(V·E) exact, so above a node threshold the implementation
-samples pivots instead and recorded which algorithm ran. That flag was emitted
-into the feature matrix.
+The trending and non-trending classes here differ in size by roughly 5× inside
+the feature window (250.3 vs 51.2 graph nodes; 212.9 vs 46.2 tweets). That
+difference is real, and volume is a legitimate baseline. The failure mode is
+when it re-enters the model *disguised as a different construct*, so a channel
+gets credit for signal it does not carry.
 
-It is a **deterministic function of graph size** — 1 for small graphs, 0 for
-large — so it inherited the class separation of `n_nodes` wholesale and scored
-**AUC 0.793**, eighth-best of 36 features, while measuring nothing whatsoever
-about diffusion.
+**Three instances, one in each of the three feature channels:**
 
-Moved to metadata. `tests/test_network.py` now fails if any size-derived or
-whole-topic quantity reaches the matrix, and `src/features/feature_sets.py`
-independently re-checks the structure arm by name.
+| # | feature | channel | claimed to measure | actually measured | strength |
+|---|---|---|---|---|---|
+| 1 | `betweenness_exact` | network | brokerage centrality | whether node count exceeded 100 | **AUC 0.793** |
+| 2 | `total_count` | network (prototype) | topic volume | tweets over the **whole day**, i.e. the peak being predicted | **RF importance 0.276** — the prototype's top feature |
+| 3 | `sent_n` | sentiment | scored-tweet count | identical to `window_tweets` (212.857 vs 46.184) | **AUC 0.832** |
 
-### `total_count` — the prototype's top feature is contaminated by the target
+A fourth, milder case is structural rather than a single feature: on these
+fragmented graphs `n_components` (149.6 vs 31.0), `n_communities` (151.6 vs
+31.3) and `community_entropy` all track `n_nodes` (250.3 vs 51.2) closely, and
+their mirror images `density`, `max_pagerank`, `largest_wcc_frac` and
+`largest_community_frac` are mechanically ~1/N and therefore run *higher* for
+the smaller non-trending graphs. Size with the sign flipped is still size.
 
-The prototype's single strongest feature was `total_count`, the topic's tweet
-count **over the entire day** (RF importance 0.276, more than triple the next
-feature). In a pre-peak design that is leakage: an all-day total is largely
-determined by the size of the peak the model is supposed to predict.
+**The part that matters: none of these were detectable from model performance.**
 
-Excluded here. All volume features are computed from the pre-peak window alone,
-and unit metadata carries a `meta_` prefix so it cannot be selected by accident.
+Every one of them made results look **better**. A leaderboard, a CV score, a
+held-out test set — none would have flagged any of the three, because all three
+raise accuracy. `total_count` survived the entire prototype, was reported as
+its single strongest feature, and was only identified when the pre-peak design
+forced the question of *when* each feature is measured.
 
-**This partly reframes the prototype's volume-only baseline.** That baseline
-scored ROC-AUC 0.774 with a target-contaminated feature doing most of the work,
-so it was not a fair "volume" comparator — it was closer to a partial oracle.
-The prototype's headline finding (network does not beat volume) is therefore
-measured against an inflated opponent, which makes the negative result *more*
-conservative, not less. The prototype numbers stand as recorded; this pipeline
-does not repeat the mistake.
+They were caught by **per-feature audit**: printing every feature's class means
+and univariate AUC before modelling and asking, for each one, what it is
+physically measuring. That check costs one table per channel. Nothing else in
+the workflow would have found them.
 
----
+**Consequence for the prototype's headline result.** `total_count` was a
+target-contaminated feature doing most of the work in the prototype's
+volume-only baseline (ROC-AUC 0.774). That baseline was closer to a partial
+oracle than to a fair volume comparator — which makes the prototype's negative
+result (network does not beat volume) *more* conservative than it appeared, not
+less. The prototype numbers stand as recorded; this pipeline does not repeat
+the mistake.
 
-## 2026-08-13 — Size proxies wearing structural names
-
-On these graphs the highest-AUC "structural" features are node counts.
-
-| feature | AUC | mean (trending) | mean (non-trending) |
-|---|---|---|---|
-| `n_nodes` | 0.821 | 250.3 | 51.2 |
-| `n_components` | 0.834 | 149.6 | 31.0 |
-| `n_communities` | 0.838 | 151.6 | 31.3 |
-| `community_entropy` | 0.835 | 4.14 | 2.77 |
-
-The windows produce heavily fragmented graphs, so most nodes sit in their own
-component and their own community. Component count, community count and node
-count are the same quantity three times.
-
-The mirror image also holds: `density` (0.005 vs 0.014), `max_pagerank` (0.036
-vs 0.074), `largest_wcc_frac` (0.184 vs 0.249) and `largest_community_frac`
-(0.096 vs 0.170) are all mechanically ~1/N and run *higher* for the smaller
-non-trending graphs. They are size with the sign flipped.
-
-**Consequence for the ablation.** Feature-set assignment is now explicit in
-`config.yaml` and enforced in code. The rule: anything that scales with tweets
-or nodes is volume, and **where assignment is arguable it goes to volume**,
-because that is the direction that makes H1 harder to pass. The size-free
-structure arm holds 14 scale-invariant features — ratios, bounded fractions,
-normalised inequality measures, and growth slopes normalised by their own final
-value. Zero raw counts.
+**Consequence for this pipeline.** Feature-set assignment is explicit in
+`config.yaml` and enforced by `src/features/feature_sets.py`: every column must
+be assigned exactly once, and the size-free structure arm is re-checked by name
+independently of config. The governing rule is that anything scaling with
+tweets or nodes is volume, and **where assignment is arguable it goes to
+volume**, because that is the direction that makes H1 harder to pass.
 
 Arms: chance → volume_only (3) → structure_size_free (14) →
-volume_plus_structure (17, the H1 test) → volume_extended (21).
+volume_plus_structure (17, the H1 test) → sentiment_only (9) →
+volume_plus_sentiment (12) → volume_extended (21).
+
+Guard tests exist per channel. The sentiment one feeds an identical probability
+distribution at 1× and 10× the tweet count and asserts that no feature moves.
 
 ---
+
+## 2026-08-13 — Normalising a count series does not make it scale-free
+
+Every temporal feature was divided by its own window level specifically to be
+scale-free. **Twelve of them still tracked volume**, and the audit caught it
+because the audit is now a measurement rather than an argument.
+
+**The mechanism, which generalises well beyond this project.** For count data,
+dividing by the mean does not remove size dependence, because the *noise* also
+scales with the mean. Under a Poisson process the coefficient of variation goes
+as `1/√mean`, so a "normalised dispersion" measure is a disguised inverse
+volume. Sparse windows separately produce more empty bins, so every entropy,
+Gini, zero-share and monotonicity measure inherits volume through the
+discretisation.
+
+Measured Spearman correlation with window volume:
+
+| feature | ρ with volume | AUC | verdict |
+|---|---|---|---|
+| `zero_bin_frac` | **−0.858** | 0.741 | discretisation artifact of low counts |
+| `bin_entropy` | +0.686 | 0.628 | bounded by number of non-empty bins |
+| `bin_gini` | −0.593 | 0.589 | same mechanism, inverted |
+| `arima_resid_cv` | −0.568 | 0.571 | Poisson dispersion |
+| `burstiness` | −0.557 | 0.562 | CV of counts ~ 1/√mean |
+| `monotone_up_frac` | +0.509 | 0.643 | ties at zero suppress increases |
+| `acf1` | +0.470 | **0.855** | highest temporal AUC — and arguable, so volume |
+| `arima_ma1` | +0.433 | 0.622 | arguable, so volume |
+
+All eight moved to the volume arm, including `acf1`, which was the strongest
+temporal feature by a wide margin. Nine survive.
+
+**The audit was then applied to the channels that had already been assigned by
+reasoning, and it moved four more.**
+
+| feature | arm it was in | ρ with volume |
+|---|---|---|
+| `mean_clustering` | structure | **+0.556** |
+| `core2_frac` | structure | +0.505 |
+| `modularity` | structure | +0.447 |
+| `reciprocity` | structure | +0.447 |
+
+All four are bounded ratios, which is why reasoning kept them. But on graphs
+this sparse — `reciprocity` is exactly zero on 85% of units, `mean_clustering`
+on 80% — their value is dominated by whether the window contained enough tweets
+to form a mutual edge or a triangle *at all*. They measure "big enough to have
+structure", which is volume.
+
+**This costs the structure arm the prototype's two strongest network features**
+(`reciprocity` AUC 0.66, `mean_clustering` 0.64 in the prototype). The reason
+they were sound there and not here is a design difference worth stating: **the
+prototype built every graph from a fixed 150 tweets, which controlled volume by
+construction.** A variable-length pre-peak window does not. Fixing the tweet
+count was a deliberate choice to isolate structure, and this is the price of
+giving it up in exchange for a real pre-peak window.
+
+`core3_frac` sits at ρ = +0.390, just inside the threshold. It is kept, and
+flagged as marginal, because the 0.4 threshold was fixed before these numbers
+existed — moving it afterwards would be changing the rule to suit the result.
+
+**Final arms:** volume_only 3 · structure_size_free 10 · sentiment 9 ·
+temporal 9 · full_fusion 31 · volume_extended 33. Cross-channel audit now
+reports 0 of 28 non-volume features above threshold.
+
+**Methodological note.** The temporal channel was audited by measurement
+because three previous channels had shipped a size proxy. Measurement then
+overturned reasoning in *both* directions it was pointed at — eight temporal
+features and four network ones that formula-level argument had cleared. The
+generalisable lesson is not "check for counts" but: **a feature's algebraic
+form does not tell you whether it encodes sample size; only its correlation
+with sample size does.**
+
+---
+
+## 2026-08-13 — Decided in advance: no LSTM on 129 units
+
+CLAUDE.md's original plan lists LSTM embeddings of the early volume curve as
+part of the temporal channel. **That is not being built as a headline
+component**, and the reasoning is recorded here *before* the temporal results
+exist so the report shows a judgement made in advance rather than a capability
+gap discovered afterwards.
+
+1. **129 units cannot support a sequence model.** A recurrent network over
+   per-unit volume curves has more parameters than the study has examples, by
+   orders of magnitude.
+2. **Gradient-boosted trees are already the designated primary fusion model**,
+   for exactly this reason. An LSTM would not be the model under test.
+3. **The failure mode is directional, and it points the wrong way.** An
+   overfitted LSTM embedding would inflate whichever arm contains it — the
+   fusion arm — which is the arm H1 is about. A component that flatters the
+   hypothesis under test is worse than no component.
+
+The temporal channel is therefore ARIMA residuals plus normalised shape
+features. If time permits, an LSTM will be run as a **reported negative** — an
+explicit demonstration that it overfits at this sample size — rather than as a
+contributing feature.
+
+
 
 ## 2026-08-13 — Sparse graphs: the added structure has little to bite on
 
@@ -389,32 +478,6 @@ trusting that a guard works because it exists.
 
 ---
 
-## 2026-08-13 — A third count reached a feature matrix: `sent_n`
-
-The sentiment channel's first run emitted `sent_n`, the number of scored tweets
-in each window, alongside the nine sentiment aggregates. Its class means were
-**212.857 vs 46.184 — identical to the volume feature `window_tweets`** — and
-it scored **AUC 0.832**, more than any real sentiment feature.
-
-It is not a sentiment feature. It is `window_tweets` under another name, and in
-a `sentiment_only` ablation arm it would have credited volume to sentiment,
-making the sentiment channel look like the second-strongest signal in the
-project.
-
-Moved to `meta_sent_n`. Two tests now guard it: one asserts the count is
-metadata and that the config's sentiment set matches exactly the emitted
-`sent_*` features; the other feeds the same probability distribution at 1× and
-10× the tweet count and asserts every sentiment feature is unchanged.
-
-**This is the third instance of the same failure mode** — after
-`betweenness_exact` and `total_count` — and the pattern is now clear enough to
-state as a methodological point: *on an imbalanced corpus where the classes
-differ in size, any quantity that scales with sample size will separate the
-classes, and will do so through a name that sounds like it measures something
-else.* Every channel in this project needed the same audit, and each one had a
-case.
-
----
 
 ## 2026-08-13 — Sentiment signal is real but weak; the strongest is disagreement
 
@@ -437,19 +500,48 @@ negative camps, doubled) both beat every measure of average sentiment.
 Emerging topics are more *contested*, not simply more negative — though they
 are slightly more negative too.
 
-That ordering is a substantive finding, and it is the reason `sent_polarisation`
-was defined at all: mean polarity cannot distinguish a split crowd from a calm
-one, since both average to zero.
+**Mechanism.** Mean polarity cannot distinguish a split crowd from a calm one,
+because both average to zero. A window in which half the tweets are strongly
+positive and half strongly negative has the same `sent_mean` as a window of
+uniform indifference. Variance and polarisation are the only features in the
+set that separate those two situations, and they are the two that discriminate
+best — which is the reason `sent_polarisation` was defined at all.
 
-No individual sentiment feature is strong. Whether the channel contributes is
-an ablation question, not a univariate one.
+**This is a substantive result for the report, not just a feature ranking.**
+Stieglitz & Dang-Xuan (2013) established that emotionally charged messages are
+shared more than neutral ones — charge drives diffusion. The result here points
+somewhere more specific: within charged content, what marks *emergence* is
+**disagreement rather than valence**. Emerging topics are not
+systematically more positive or more negative; they are more contested. That
+extends the existing finding rather than reproducing it, and it is directly
+testable — it predicts that a valence-only sentiment feature set should
+underperform one containing dispersion measures, which the ablation will show
+either way.
+
+Caveat kept in view: no individual sentiment feature is strong (best 0.673).
+Whether the channel contributes is an ablation question, not a univariate one,
+and the mechanism above is a hypothesis the ablation can support or fail to
+support — not something these AUCs establish on their own.
 
 ---
 
 ## 2026-08-13 — VADER covers too few negatives to be an arm
 
-VADER was specified as an English-subset baseline. Measured coverage over the
-final 129 units:
+VADER was specified as an English-subset baseline. It cannot serve as one here,
+and the reason is not thin coverage but **confounded coverage**: which units
+VADER can score is itself determined by the label.
+
+The trending pool is multilingual (43.7% English); the non-trending pool is
+88.8% Spanish. So English presence in a window is a *marker of the positive
+class*. VADER's covered subset is **77% positive against a corpus prevalence of
+0.326** — a classifier that predicted "trending" purely from "this unit has
+enough English to score" would already beat chance. Any VADER-based arm would
+be measuring that, not sentiment.
+
+This is why the check is descriptive. It is not a caveat attached to an
+otherwise valid baseline.
+
+Measured coverage over the final 129 units:
 
 | | |
 |---|---|
@@ -459,9 +551,8 @@ final 129 units:
 | English tweets scored | 19,148 |
 | median English tweets per covered unit | 47.5 |
 
-**Ten negative units cannot support an ablation arm**, and the covered subset is
-77% positive against a corpus prevalence of 32.6% — the coverage itself is
-confounded with the label, because trending topics are the multilingual ones.
+**Ten negative units could not support an ablation arm even without the
+confound.**
 
 Worth being precise about what VADER is scoring: the main channel is filtered
 to Spanish, so VADER is not a second opinion on the same tweets. It scores a

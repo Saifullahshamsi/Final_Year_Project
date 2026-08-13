@@ -1,0 +1,156 @@
+{
+  "n_units": 129,
+  "n_features": 17,
+  "arima_converged": 129,
+  "features": [
+    "slope_norm",
+    "accel_norm",
+    "burstiness",
+    "peakedness",
+    "bin_entropy",
+    "bin_gini",
+    "mass_centroid",
+    "frac_last_quarter",
+    "log_half_ratio",
+    "monotone_up_frac",
+    "zero_bin_frac",
+    "acf1",
+    "arima_ar1",
+    "arima_ma1",
+    "arima_resid_cv",
+    "arima_resid_acf1",
+    "arima_forecast_ratio"
+  ],
+  "summary": {
+    "slope_norm": {
+      "mean_trending": 0.05577953564728742,
+      "mean_non_trending": 0.018380069680655663,
+      "univariate_auc": 0.6652983032293377,
+      "spearman_with_volume": 0.2203,
+      "arm": "temporal"
+    },
+    "accel_norm": {
+      "mean_trending": 0.001591906365867437,
+      "mean_non_trending": -0.0019049998630441762,
+      "univariate_auc": 0.5355774493705528,
+      "spearman_with_volume": 0.1748,
+      "arm": "temporal"
+    },
+    "burstiness": {
+      "mean_trending": 0.8897154284717301,
+      "mean_non_trending": 0.8900584571684966,
+      "univariate_auc": 0.5617131910235359,
+      "spearman_with_volume": -0.5568,
+      "arm": "volume"
+    },
+    "peakedness": {
+      "mean_trending": 3.4379202788001786,
+      "mean_non_trending": 3.0760807512390937,
+      "univariate_auc": 0.5292829775588397,
+      "spearman_with_volume": -0.3417,
+      "arm": "temporal"
+    },
+    "bin_entropy": {
+      "mean_trending": 0.8581831391079591,
+      "mean_non_trending": 0.8369359676924737,
+      "univariate_auc": 0.6280788177339902,
+      "spearman_with_volume": 0.6862,
+      "arm": "volume"
+    },
+    "bin_gini": {
+      "mean_trending": 0.42957452880318303,
+      "mean_non_trending": 0.46444368692806737,
+      "univariate_auc": 0.5888067870826492,
+      "spearman_with_volume": -0.5931,
+      "arm": "volume"
+    },
+    "mass_centroid": {
+      "mean_trending": 0.5883175981082052,
+      "mean_non_trending": 0.5291017769943713,
+      "univariate_auc": 0.6651614668856048,
+      "spearman_with_volume": 0.2204,
+      "arm": "temporal"
+    },
+    "frac_last_quarter": {
+      "mean_trending": 0.31160480335481366,
+      "mean_non_trending": 0.24460416021519388,
+      "univariate_auc": 0.5885331143951834,
+      "spearman_with_volume": 0.1713,
+      "arm": "temporal"
+    },
+    "log_half_ratio": {
+      "mean_trending": 1.5361882671489144,
+      "mean_non_trending": 0.11929902932808775,
+      "univariate_auc": 0.670361247947455,
+      "spearman_with_volume": 0.2288,
+      "arm": "temporal"
+    },
+    "monotone_up_frac": {
+      "mean_trending": 0.4397759103641457,
+      "mean_non_trending": 0.39486139283299526,
+      "univariate_auc": 0.6427203065134101,
+      "spearman_with_volume": 0.5088,
+      "arm": "volume"
+    },
+    "zero_bin_frac": {
+      "mean_trending": 0.13227513227513227,
+      "mean_non_trending": 0.27075351213282245,
+      "univariate_auc": 0.7405582922824303,
+      "spearman_with_volume": -0.8583,
+      "arm": "volume"
+    },
+    "acf1": {
+      "mean_trending": 0.35600459149878994,
+      "mean_non_trending": -0.0034441775248909563,
+      "univariate_auc": 0.8552271483305965,
+      "spearman_with_volume": 0.4698,
+      "arm": "volume"
+    },
+    "arima_ar1": {
+      "mean_trending": 0.031184677323088907,
+      "mean_non_trending": -0.044849891521630714,
+      "univariate_auc": 0.6020799124247401,
+      "spearman_with_volume": 0.0259,
+      "arm": "temporal"
+    },
+    "arima_ma1": {
+      "mean_trending": -0.5205656028124613,
+      "mean_non_trending": -0.7908654405137048,
+      "univariate_auc": 0.6223316912972084,
+      "spearman_with_volume": 0.4334,
+      "arm": "volume"
+    },
+    "arima_resid_cv": {
+      "mean_trending": 1.0865470386588778,
+      "mean_non_trending": 1.0854789161115164,
+      "univariate_auc": 0.5708812260536398,
+      "spearman_with_volume": -0.5677,
+      "arm": "volume"
+    },
+    "arima_resid_acf1": {
+      "mean_trending": -0.020159374178406343,
+      "mean_non_trending": -0.037718737866188276,
+      "univariate_auc": 0.5894909688013137,
+      "spearman_with_volume": 0.0924,
+      "arm": "temporal"
+    },
+    "arima_forecast_ratio": {
+      "mean_trending": 1.77684240622712,
+      "mean_non_trending": 2.936553588422284,
+      "univariate_auc": 0.544471811713191,
+      "spearman_with_volume": -0.0736,
+      "arm": "temporal"
+    }
+  },
+  "size_proxy_flagged": [
+    "burstiness",
+    "bin_entropy",
+    "bin_gini",
+    "monotone_up_frac",
+    "zero_bin_frac",
+    "acf1",
+    "arima_ma1",
+    "arima_resid_cv"
+  ],
+  "seed": 42
+}

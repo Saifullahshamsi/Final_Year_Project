@@ -1,0 +1,147 @@
+{
+  "threshold": 0.4,
+  "n_units": 129,
+  "features": {
+    "tweets_per_user": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.1235,
+      "flagged": false
+    },
+    "edges_per_tweet": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": -0.1596,
+      "flagged": false
+    },
+    "edge_node_ratio_final": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": -0.0271,
+      "flagged": false
+    },
+    "pagerank_gini": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.217,
+      "flagged": false
+    },
+    "betweenness_gini": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.3508,
+      "flagged": false
+    },
+    "core3_frac": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.39,
+      "flagged": false
+    },
+    "node_growth_slope": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.1787,
+      "flagged": false
+    },
+    "edge_growth_slope": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.0508,
+      "flagged": false
+    },
+    "author_growth_slope": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.2332,
+      "flagged": false
+    },
+    "new_author_frac_last_slice": {
+      "arm": "structure_size_free",
+      "spearman_with_volume": 0.2683,
+      "flagged": false
+    },
+    "sent_mean": {
+      "arm": "sentiment",
+      "spearman_with_volume": -0.2042,
+      "flagged": false
+    },
+    "sent_var": {
+      "arm": "sentiment",
+      "spearman_with_volume": 0.2725,
+      "flagged": false
+    },
+    "sent_intensity": {
+      "arm": "sentiment",
+      "spearman_with_volume": 0.1009,
+      "flagged": false
+    },
+    "sent_strong_frac": {
+      "arm": "sentiment",
+      "spearman_with_volume": 0.1168,
+      "flagged": false
+    },
+    "sent_pos_frac": {
+      "arm": "sentiment",
+      "spearman_with_volume": -0.0639,
+      "flagged": false
+    },
+    "sent_neg_frac": {
+      "arm": "sentiment",
+      "spearman_with_volume": 0.2339,
+      "flagged": false
+    },
+    "sent_neu_frac": {
+      "arm": "sentiment",
+      "spearman_with_volume": -0.1132,
+      "flagged": false
+    },
+    "sent_skew": {
+      "arm": "sentiment",
+      "spearman_with_volume": 0.1241,
+      "flagged": false
+    },
+    "sent_polarisation": {
+      "arm": "sentiment",
+      "spearman_with_volume": 0.2383,
+      "flagged": false
+    },
+    "slope_norm": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.2204,
+      "flagged": false
+    },
+    "accel_norm": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.1747,
+      "flagged": false
+    },
+    "peakedness": {
+      "arm": "temporal",
+      "spearman_with_volume": -0.3437,
+      "flagged": false
+    },
+    "mass_centroid": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.2204,
+      "flagged": false
+    },
+    "frac_last_quarter": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.1713,
+      "flagged": false
+    },
+    "log_half_ratio": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.2288,
+      "flagged": false
+    },
+    "arima_ar1": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.0259,
+      "flagged": false
+    },
+    "arima_resid_acf1": {
+      "arm": "temporal",
+      "spearman_with_volume": 0.0924,
+      "flagged": false
+    },
+    "arima_forecast_ratio": {
+      "arm": "temporal",
+      "spearman_with_volume": -0.0736,
+      "flagged": false
+    }
+  },
+  "flagged": []
+}

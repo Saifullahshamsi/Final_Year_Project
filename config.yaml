@@ -132,6 +132,20 @@ features:
     - mean_core
     - max_betweenness
     - mean_betweenness
+    # Moved here by MEASUREMENT, not by reasoning about their formulas. All four
+    # are bounded ratios and were assigned to structure on that basis, but on
+    # sparse graphs their value is dominated by whether the window had enough
+    # tweets to form a triangle or a mutual edge at all (reciprocity is zero on
+    # 85% of units, mean_clustering on 80%). So they measure "big enough to have
+    # structure", which is volume.
+    # This costs the structure arm the prototype's two strongest network
+    # features. The prototype built every graph from a fixed 150 tweets, which
+    # controlled volume by construction; a variable-length pre-peak window does
+    # not, and this is the price.
+    - mean_clustering       # rho +0.556
+    - core2_frac            # rho +0.505
+    - modularity            # rho +0.447
+    - reciprocity           # rho +0.447
 
   # XLM-T aggregates. All are means, fractions or moments — nothing scales with
   # tweet count. The scored-tweet count is emitted as meta_sent_n and excluded:
@@ -148,19 +162,47 @@ features:
     - sent_skew
     - sent_polarisation
 
+  # Curve-shape and ARIMA features that survived the size-proxy audit
+  # (|Spearman| with window_tweets < 0.4). See audit: below.
+  temporal:
+    - slope_norm
+    - accel_norm
+    - peakedness
+    - mass_centroid
+    - frac_last_quarter
+    - log_half_ratio
+    - arima_ar1
+    - arima_resid_acf1
+    - arima_forecast_ratio
+
+  # Temporal features that FAILED the audit. Dividing a count series by its own
+  # mean does NOT make it scale-free: for counts, dispersion goes as 1/sqrt(mean)
+  # (Poisson), and sparse windows have more empty bins, so every
+  # dispersion/entropy/zero-share measure tracks volume mechanically.
+  # zero_bin_frac is the extreme case at rho = -0.858.
+  temporal_size_dependent:
+    - burstiness            # rho -0.557 — CV of counts ~ 1/sqrt(mean)
+    - bin_entropy           # rho +0.686 — bounded by number of non-empty bins
+    - bin_gini              # rho -0.593 — same mechanism, inverted
+    - monotone_up_frac      # rho +0.509 — ties at zero suppress increases
+    - zero_bin_frac         # rho -0.858 — a discretisation artifact of low counts
+    - arima_resid_cv        # rho -0.568 — Poisson dispersion again
+    - acf1                  # rho +0.470 — highest temporal AUC (0.855); arguable, so volume
+    - arima_ma1             # rho +0.433 — arguable, so volume
+
   # Scale-invariant: ratios, bounded fractions, normalised inequality measures
   # and growth slopes normalised by their own final value. Zero raw counts.
+  # Survivors of the measured cross-channel audit (src/eval/size_audit.py).
+  # core3_frac sits at rho +0.390, just inside the 0.4 threshold — marginal, and
+  # kept only because the threshold was fixed before these numbers were seen.
+  # Moving it after the fact would be changing the rule to suit the result.
   structure_size_free:
     - tweets_per_user
     - edges_per_tweet
     - edge_node_ratio_final
-    - reciprocity
     - pagerank_gini
     - betweenness_gini
-    - mean_clustering
-    - modularity
-    - core2_frac
-    - core3_frac
+    - core3_frac            # rho +0.390 — marginal
     - node_growth_slope
     - edge_growth_slope
     - author_growth_slope
@@ -181,9 +223,24 @@ ablation:
     sets: [sentiment]
   - name: volume_plus_sentiment
     sets: [volume_baseline, sentiment]
+  - name: temporal_only
+    sets: [temporal]
+  - name: volume_plus_temporal
+    sets: [volume_baseline, temporal]
+  # H1: does fusing all three channels beat the best single-signal baseline?
+  - name: full_fusion
+    sets: [volume_baseline, structure_size_free, sentiment, temporal]
   - name: volume_extended
-    sets: [volume_baseline, size_dependent]
-  # Full fusion is added once the temporal channel exists.
+    sets: [volume_baseline, size_dependent, temporal_size_dependent]
+
+# Systematic size-proxy audit. Every channel so far shipped at least one
+# feature that was really a sample-size count under another name, and none was
+# detectable from model performance because all of them raised accuracy.
+# Each channel therefore correlates every feature against window volume
+# (Spearman, so monotone-but-nonlinear proxies do not slip through) and anything
+# at or above this threshold is reassigned to volume.
+audit:
+  size_proxy_spearman_threshold: 0.4
 
 sentiment:
   model: cardiffnlp/twitter-xlm-roberta-base-sentiment
