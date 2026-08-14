@@ -276,6 +276,223 @@ distribution at 1× and 10× the tweet count and asserts that no feature moves.
 
 ---
 
+## 2026-08-13 — The language confound is NOT fully controlled. Read this before any other result.
+
+The negative control was run to prove the language confound had been handled.
+**It proved the opposite.** This qualifies the attribution of every result in
+this study and is recorded first for that reason.
+
+### A — how large is the confound?
+
+A classifier given **nothing but the language mix** of each window:
+
+| | PR-AUC | 95% CI | ROC-AUC | chance PR-AUC |
+|---|---|---|---|---|
+| language-only | **0.897** | [0.824, 0.958] | 0.893 | 0.326 |
+
+**That is the best-performing model in the entire study** — better than
+`full_fusion` (0.853), better than `volume_extended` (0.820). Mean Spanish
+share of window: **0.483 for trending, 0.978 for non-trending.**
+
+### B — do the modelled features still carry language? Yes.
+
+Predicting "is this window majority Spanish" *from the modelled feature
+matrices*. This was required to fail. It did not:
+
+| arm | ROC-AUC predicting language | verdict |
+|---|---|---|
+| full_fusion | **0.812** | leaks |
+| volume_extended | 0.769 | leaks |
+| structure_size_free | 0.747 | leaks |
+| temporal_only | 0.744 | leaks |
+| volume_only | 0.735 | leaks |
+| sentiment_only | 0.683 | borderline |
+
+Tweet-level filtering made every feature *computed from Spanish tweets*. It did
+not make them *independent of language*, because **how much Spanish activity a
+topic has is itself informative**: `window_tweets` is a Spanish count, and
+multilingual topics are the large ones.
+
+### C — can we check performance within one language? No.
+
+| Spanish share of window | trending | non-trending |
+|---|---|---|
+| p0 (minimum) | 0.048 | **0.824** |
+| p25 | 0.193 | 0.964 |
+| p50 | 0.438 | 1.000 |
+| p75 | **0.814** | 1.000 |
+
+**The least-Spanish non-trending unit (0.824) sits above the 75th percentile of
+trending units (0.814).** The distributions barely overlap. At a ≥90% Spanish
+threshold only 6 trending units remain against 80 non-trending. The widest
+usable common-support band, [0.5, 0.99), holds 15 trending and 28 non-trending
+— far too few to model.
+
+**The planned within-language robustness check cannot be executed at all.**
+
+### What this means
+
+In this corpus **a trending topic essentially *is* a multilingual topic**.
+Language, volume and label are close to collinear: language predicts the label
+at ROC 0.893, and volume alone predicts language at ROC 0.735.
+
+Three control strategies were available and all three are now exhausted:
+topic-level matching (impossible — zero English negatives), tweet-level
+filtering (implemented, insufficient), and within-language restriction
+(impossible — no common support).
+
+**Consequence for attribution.** No result in this study can cleanly separate
+"this model detects trend dynamics" from "this model detects that the topic is
+multilingual". The honest statement is that the classifiers work, and that
+their performance has a language component that could not be removed or
+bounded on this data.
+
+### What survives the confound
+
+Not everything is undermined, and the distinction matters:
+
+* **The H2 lead-time result is largely protected.** The nested design compares
+  the *same 52 topics* at every lead. Each topic's language composition is
+  fixed across those comparisons. Language therefore cannot explain why
+  `volume_only` decays from 0.765 to 0.515 while `volume_plus_structure` holds
+  at 0.764 — the confound is constant while the effect varies. This is a
+  within-topic contrast and it is the study's most defensible finding.
+* **The size-proxy findings are unaffected.** They are statements about
+  correlations between features and window volume, not about the label.
+* **The H1 null is not weakened.** A confound shared by all arms inflates them
+  together; it cannot manufacture a *failure* to beat a baseline.
+
+What is genuinely compromised is any absolute claim about predictive
+performance, and any claim that a specific channel detects trend dynamics as
+such.
+
+### Was the corpus salvageable?
+
+Probably not for this design. The two pools were collected by different
+processes — one sampling global trends, one sampling a Spanish-language stream
+— so language is not a nuisance variable that happened to correlate with the
+label. It is **an artifact of how the two classes were assembled**, and no
+amount of downstream modelling removes it. A corpus with negatives drawn from
+the same language distribution as positives is the only real fix, and that
+requires re-collection, which is out of scope here.
+
+Recorded rather than worked around. The alternative — reporting the results
+without this section — would have presented a language detector as a trend
+predictor.
+
+---
+
+## 2026-08-13 — Volume decays, structure persists
+
+**The project's positive contribution.** On the 52 topics that survive at every
+lead — prevalence fixed at 0.500, so PR-AUC is directly comparable down the
+column:
+
+| lead | volume_only | volume+structure |
+|---|---|---|
+| 30 min | 0.765 | 0.890 |
+| 60 min | 0.795 | 0.888 |
+| 120 min | 0.699 | **0.923** |
+| 180 min | **0.515** | **0.764** |
+
+**At a three-hour lead, engagement counts alone reach 0.515 against a chance
+value of 0.500 — no better than guessing.** Volume plus network structure holds
+0.764 on the same topics, the same folds, the same model.
+
+The McNemar p-value for that comparison falls monotonically as the cut-off
+moves earlier:
+
+```
+lead   30 min → p = 0.3877
+lead   60 min → p = 0.2668
+lead  120 min → p = 0.1185
+lead  180 min → p = 0.0347
+```
+
+**The trend is the evidence, not the single significant cell.** Four tests were
+run; Bonferroni-corrected α is 0.0125 and p = 0.0347 does not clear it. What
+does the work is that the gap widens in the predicted direction at every step —
+a pattern four independent tests would be unlikely to produce by chance in that
+order, but which this study is too small to confirm formally.
+
+### What it means
+
+This is **the one place in the study where a non-volume channel does something
+volume cannot**. Everywhere else the channels re-encode volume; here, structure
+carries signal at a horizon where counts have decayed to nothing.
+
+The mechanism is plausible and matches existing theory. Ma, Feng & Lai and Weng
+et al. both argue that the *shape* of early diffusion — who is talking to whom,
+across how many communities — is informative before raw counts separate. A
+topic that will emerge and one that will not can look identical by volume three
+hours out, while already differing in how their interaction graphs are wired.
+That is exactly the pattern here: volume's discriminative power collapses with
+lead time while structure's decays far more slowly.
+
+**Stated at the strength the evidence supports:** consistent with the theory,
+directionally clear, effect size large (0.515 vs 0.764), statistically
+marginal, n = 52.
+
+---
+
+## 2026-08-13 — One phenomenon at three scales
+
+The study's central finding appears three times, at increasing levels of
+aggregation, and the three are the same thing seen from different distances:
+
+| scale | observation | evidence |
+|---|---|---|
+| **feature** | features re-encode volume under other names | 12 features across 3 channels correlate with window volume above 0.4; `zero_bin_frac` at −0.858, `sent_n` identical to `window_tweets` |
+| **model** | channels add nothing over a well-specified volume baseline | full_fusion vs volume_extended, p = 0.6636 |
+| **lead** | the extra channels actively *hurt* at long lead | nested design: full_fusion below volume_plus_structure at every lead; p = 0.345 at 180 min where structure alone reaches 0.035 |
+
+The third is the sharpest form. Adding sentiment and temporal features to
+volume-plus-structure does not merely fail to help — it **dilutes**. On 52
+units, extra features that carry no independent signal cost model capacity and
+degrade the arm that would otherwise show the H2 effect most clearly.
+
+**This coherence is what makes the study a study.** Any one of the three could
+be dismissed: a feature correlation might not matter predictively, a model-level
+null might be underpowering, a lead-level gap might be noise. Together they
+identify one mechanism, measured three ways, each consistent with the others.
+
+---
+
+## 2026-08-13 — Methods: the nested lead-time design
+
+The obvious way to draw a lead-time curve is wrong in two independent ways, and
+both were only visible after the first run.
+
+**1. Sample composition changes with the lead.** A longer lead requires the
+window to start earlier, so more topics fail the "window fits inside the band"
+filter: 183 units at 30 min, 129 at 60, 93 at 120, 64 at 180. A raw curve
+therefore mixes *performance changing with lead time* with *which topics
+survive at each lead* — and the surviving topics at 180 min are systematically
+those with late peaks and long observable histories, which is not a random
+subsample.
+
+**2. PR-AUC is not comparable across leads.** Prevalence moves with the
+surviving sample — 0.279, 0.326, 0.376, 0.422 — and chance PR-AUC *equals*
+prevalence. A PR-AUC of 0.62 is well above chance at 30 min and barely above it
+at 180. Comparing the raw values down a column compares different things.
+
+**Fixes, both applied.** Lift over chance is reported alongside raw PR-AUC. And
+the sweep is re-run on the **52 topics that survive at every lead**, holding
+composition fixed so the only thing varying is the cut-off. In that design
+prevalence is constant at 0.500 by construction, which also removes the second
+problem.
+
+The two designs disagree in an instructive way: on the full sample
+`volume_only` looks flat (0.619 → 0.611), suggesting volume is robust to lead
+time. On the nested sample it collapses (0.765 → 0.515). The full-sample
+flatness was an artifact — later leads retain easier topics, which masks the
+decay.
+
+**Generalisable:** any curve plotted against a parameter that also filters the
+sample needs the nested version, or it is partly a plot of the filter.
+
+---
+
 ## 2026-08-13 — H2 result: structure extends lead time, at marginal significance
 
 H2 claims network and sentiment features extend the achievable lead time beyond
