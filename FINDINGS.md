@@ -347,24 +347,90 @@ multilingual". The honest statement is that the classifiers work, and that
 their performance has a language component that could not be removed or
 bounded on this data.
 
-### What survives the confound
+### What survives the confound, and why
 
-Not everything is undermined, and the distinction matters:
+A reader who reaches this section will reasonably assume every result in the
+study is dead. Some are. Three are not, and the reasons are different in each
+case and need arguing rather than asserting.
 
-* **The H2 lead-time result is largely protected.** The nested design compares
-  the *same 52 topics* at every lead. Each topic's language composition is
-  fixed across those comparisons. Language therefore cannot explain why
-  `volume_only` decays from 0.765 to 0.515 while `volume_plus_structure` holds
-  at 0.764 — the confound is constant while the effect varies. This is a
-  within-topic contrast and it is the study's most defensible finding.
-* **The size-proxy findings are unaffected.** They are statements about
-  correlations between features and window volume, not about the label.
-* **The H1 null is not weakened.** A confound shared by all arms inflates them
-  together; it cannot manufacture a *failure* to beat a baseline.
+**1. The H2 lead-time result is protected, and this is now the study's most
+defensible finding.**
 
-What is genuinely compromised is any absolute claim about predictive
-performance, and any claim that a specific channel detects trend dynamics as
-such.
+The nested design compares the **same 52 topics at every lead**. Each topic's
+language composition is a fixed property of that topic — it does not change
+when the cut-off moves from 30 minutes to 180. So across the four rows of that
+comparison, **the confound is held constant while the effect varies**. Language
+cannot explain why `volume_only` decays from 0.765 to 0.515 while
+`volume_plus_structure` holds at 0.764, because language is identical in both
+arms and at every lead.
+
+That makes it a **within-topic contrast**, and within-topic contrasts are
+immune to any confound that is constant within a topic. It is the most
+defensible result in the study — not because the effect is the largest, but
+because it is the only one the confound cannot reach.
+
+**This was luck, not foresight.** The nested design was built to fix a
+different problem: sample composition changing across leads, which made the raw
+curve partly a plot of the survival filter. That it also neutralises the
+language confound was discovered afterwards, when the negative control came
+back positive. Claiming the design as a deliberate confound control would be
+the one dishonest move available at this point, and it is not being made.
+
+**2. The H1 null survives, and the logic matters.**
+
+A confound that is present in *every* arm inflates them all in the same
+direction. The language signal is available to `volume_only`, to
+`structure_size_free`, to `volume_extended` and to `full_fusion` alike — all
+four are built from the same units with the same language composition.
+
+Therefore the confound can manufacture a **spurious pass** — a model looking
+predictive when it is only detecting language — but it cannot manufacture a
+spurious **failure to beat a baseline**. For the confound to explain H1's null
+it would have to inflate `volume_extended` specifically, relative to
+`full_fusion`, which it has no mechanism to do: both arms have full access to
+it. If anything, a shared inflation compresses the differences between arms
+towards zero, which makes detecting a genuine fusion benefit *harder*, not
+easier.
+
+The honest form is: H1 failed, and the confound is not a candidate explanation
+for why.
+
+**3. The size-proxy findings are untouched.** They are statements about
+correlations between features and window volume — the label does not enter
+them. `zero_bin_frac` correlates with volume at −0.858 regardless of what
+language anything is in.
+
+**What is genuinely compromised:** any absolute claim about predictive
+performance, and any claim that a specific channel detects *trend dynamics* as
+such rather than the multilingual character of trending topics.
+
+### What this cost, and the counterfactual
+
+The language-only classifier was prescribed in the project design precisely to
+catch this. It was run late — after the channels, the ablation and the
+lead-time sweep — and it invalidated the interpretation of work already done.
+Running it earlier would not have changed the finding, but would have framed
+every result correctly from the start.
+
+All three prescribed control strategies were attempted, in the order the design
+specified, and the corpus defeated each:
+
+| strategy | outcome |
+|---|---|
+| topic-level language matching | **impossible** — zero English negatives in all 24 settings swept |
+| tweet-level filtering | **implemented, insufficient** — features still recover language at ROC 0.74–0.81 |
+| within-language restriction | **impossible** — no common support (see distribution table above) |
+
+**Documenting an exhausted control hierarchy is itself a result.** It converts
+"the confound was not controlled" from an admission into a finding about what
+this corpus can and cannot support.
+
+**The counterfactual is the part worth stating plainly: had the control not
+been run, every number in this study would have looked clean and been
+uninterpretable.** The ablation table, the CIs, the McNemar tests and the
+lead-time curve would all have appeared exactly as they do now. Nothing in the
+results would have looked wrong. The control is the only thing standing between
+a language detector and a claimed trend predictor.
 
 ### Was the corpus salvageable?
 
@@ -379,6 +445,140 @@ requires re-collection, which is out of scope here.
 Recorded rather than worked around. The alternative — reporting the results
 without this section — would have presented a language detector as a trend
 predictor.
+
+---
+
+## 2026-08-13 — Robustness: the conclusions are stable, the confound is not removable
+
+**Framing.** These are sensitivity checks on a model with a confound that could
+not be removed. They test whether conclusions survive parameter choices. They do
+not validate a clean result, because there is no clean result to validate.
+
+### Common support — the only slice where the classes overlap in language
+
+Units whose window is 50–99% Spanish: **15 trending, 28 non-trending, n = 43.**
+Underpowered by construction and stated as such before running.
+
+| arm | PR-AUC | 95% CI | lift over chance (0.349) |
+|---|---|---|---|
+| volume_only | 0.442 | [0.296, 0.681] | +0.093 |
+| structure_size_free | 0.558 | [0.332, 0.780] | +0.209 |
+| volume_extended | 0.712 | [0.487, 0.906] | +0.363 |
+| full_fusion | 0.735 | [0.525, 0.891] | +0.386 |
+
+full_fusion vs volume_extended: **McNemar p = 0.7744** (7/5 discordant). The H1
+null holds here too, on a fifth of the data.
+
+**And the confound does not disappear inside the overlap band.** A classifier
+given only the Spanish share of the window scores **PR-AUC 0.716** there —
+essentially matching `volume_extended` (0.712) and close to `full_fusion`
+(0.735). The band was selected to be the region of common language support, and
+language still predicts the label as well as the full feature set does.
+
+**This is the clearest single demonstration that the confound cannot be escaped
+by restriction.** The attempt was made, the result is a null, and the null is
+uninformative because the confound survives the restriction. Reported because
+declining to attempt it would have left the possibility untested.
+
+### `min_window_tweets` — the one tuned parameter
+
+| setting | n | chance | volume_only | structure | volume_extended | full_fusion | fusion vs vol_ext |
+|---|---|---|---|---|---|---|---|
+| 15 | 129 | 0.326 | 0.621 | 0.671 | 0.821 | 0.868 | p = 0.286 |
+| 20 | 102 | 0.382 | 0.672 | 0.603 | 0.844 | 0.871 | p = 1.000 |
+| 25 | 79 | 0.468 | 0.746 | 0.802 | 0.870 | 0.894 | p = 1.000 |
+
+Raw PR-AUC rises with the threshold only because prevalence rises with it
+(0.326 → 0.468). **Lift over chance falls**: full_fusion +0.542, +0.489, +0.426.
+The H1 null is unaffected at every setting. The tuned parameter did not create
+the conclusion.
+
+### Window length — drives graph sparsity
+
+| window | n | chance | volume_only | structure | volume_extended | full_fusion | fusion vs vol_ext |
+|---|---|---|---|---|---|---|---|
+| 30 min | 71 | 0.521 | 0.666 | 0.664 | 0.763 | 0.879 | p = 0.359 |
+| 60 min | 107 | 0.383 | 0.587 | 0.616 | 0.775 | 0.809 | p = 0.678 |
+| 90 min | 129 | 0.326 | 0.621 | 0.671 | 0.821 | 0.868 | p = 0.286 |
+
+Never significant, at any window length. The choice of 90 minutes is not what
+produced the null.
+
+### Cross-validation noise, measured
+
+The robustness checks use a different CV seed and splitter from the headline
+table, which incidentally quantifies seed sensitivity: `full_fusion` moves 0.853
+→ 0.868 and `volume_only` 0.649 → 0.621 on identical data. **Roughly ±0.02–0.03
+PR-AUC from the resampling choice alone** — the same order as several
+differences between arms, and a further reason to read the CIs rather than the
+point estimates.
+
+### A bias caught in the robustness code itself
+
+The first run collected sentiment texts for the primary units only. Eleven units
+that survive at a 30-minute window but not at 90 were therefore scored with
+all-zero sentiment features — a silent bias in exactly the arm under test. Fixed
+by collecting over the union of every sweep setting's units before any sweep
+runs. The corrected 30-minute figures differ (full_fusion 0.882 → 0.879, fusion
+vs volume_extended p 0.824 → 0.359).
+
+---
+
+## 2026-08-13 — Feature importance: sanity check against theory
+
+Permutation importance on a held-out split, `full_fusion`, PR-AUC as the
+scoring. **Indicative only at n = 129** — a sanity check against theory, not a
+ranking to interpret feature by feature. Every standard deviation below is
+comparable to or larger than the mean it accompanies.
+
+| feature | Δ PR-AUC when shuffled | arm |
+|---|---|---|
+| `arima_ar1` | +0.040 ± 0.037 | temporal |
+| `tweets_per_active_bin` | +0.035 ± 0.063 | volume |
+| `window_tweets` | +0.023 ± 0.026 | volume |
+| `node_growth_slope` | +0.015 ± 0.022 | structure |
+| `unique_users` | +0.010 ± 0.030 | volume |
+| `arima_forecast_ratio` | +0.007 ± 0.027 | temporal |
+
+**Consistent with theory, weakly.** Three of the top six are volume measures,
+which matches everything else in this study. `node_growth_slope` — how fast the
+interaction graph accretes nodes across the window — is the highest-ranked
+structural feature, which is what Weng et al. and Cheng et al. would predict:
+early *breadth* of diffusion, not depth or centrality. `arima_ar1` heading the
+list is harder to interpret and may simply be noise at this sample size.
+
+**Against theory:** none of the concentration or community measures
+(`pagerank_gini`, `betweenness_gini`, `core3_frac`) carries meaningful
+importance. On graphs this sparse they are near-degenerate — consistent with the
+sparsity limitation already recorded, not evidence against the theory itself.
+
+No feature's importance interval excludes zero. The honest reading is that the
+ordering is suggestive and the magnitudes are not distinguishable from noise.
+
+---
+
+## 2026-08-13 — Figures: the palette was wrong and it was checkable
+
+The project's original figure palette — navy `#1f3a5f`, teal `#2a8a8a`, amber
+`#b06b1f`, grey `#888888` — was chosen by eye and carried into the prototype
+figures. Run through a colour-vision validator it fails four of five checks:
+
+| check | result |
+|---|---|
+| lightness band | FAIL — navy at L 0.347, below the band |
+| chroma floor | FAIL — navy, teal and grey read as gray |
+| CVD separation | FAIL — grey ↔ teal **ΔE 1.9** under protanopia |
+| normal-vision floor | FAIL — grey ↔ teal **ΔE 9.8**, below the floor of 15 |
+
+**ΔE 9.8 means the two series are hard to distinguish even with full colour
+vision**, and 1.9 means a protanopic reader sees one colour. Replaced with the
+Okabe-Ito set (`#0072B2`, `#E69F00`, `#009E73`, `#CC79A7`), which passes, and
+every series additionally carries a direct label and a distinct marker so
+identity never rests on colour alone.
+
+Recorded because it is the same lesson as the size-proxy audit in a different
+domain: **a property that can be measured should not be assessed by eye.** The
+palette looked fine. It was not.
 
 ---
 
