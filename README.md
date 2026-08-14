@@ -116,6 +116,65 @@ leak corrected:
 
 Swap `--mode fixed` and the matching filenames for the corrected run.
 
+### Regenerating every result from a clean checkout
+
+Given the dataset in `dataset/`, run these in order. Each depends on the
+previous one's cached output; nothing is hand-edited at any stage.
+
+```bash
+.venv/Scripts/python -m src.data.units
+```
+```bash
+.venv/Scripts/python -m src.features.network
+```
+```bash
+.venv/Scripts/python -m pip install -r requirements-sentiment.txt
+```
+```bash
+.venv/Scripts/python -m src.features.sentiment
+```
+```bash
+.venv/Scripts/python -m src.features.temporal
+```
+```bash
+.venv/Scripts/python -m src.eval.size_audit
+```
+```bash
+.venv/Scripts/python -m src.eval.ablation
+```
+```bash
+.venv/Scripts/python -m src.eval.lead_time
+```
+```bash
+.venv/Scripts/python -m src.eval.language_control
+```
+```bash
+.venv/Scripts/python -m src.eval.robustness
+```
+```bash
+.venv/Scripts/python -m src.eval.figures
+```
+
+The sentiment step is the only slow one (~11 min on first run, ~30 s
+thereafter — it caches raw model probabilities by text hash). Everything else
+completes in seconds to a couple of minutes.
+
+### Figures and the scripts that produce them
+
+| figure | produced by | reads |
+|---|---|---|
+| `fig_ablation.png` | `src/eval/figures.py` | `ablation_results.json` |
+| `fig_lead_time_nested.png` | `src/eval/figures.py` | `lead_time_results.json` |
+| `fig_pr_vs_roc_sentiment.png` | `src/eval/figures.py` | feature matrices |
+| `fig_size_proxy_audit.png` | `src/eval/figures.py` | feature matrices |
+| `fig_language_overlap.png` | `src/eval/figures.py` | corpus + `units.csv` |
+| `fig_feature_importance.png` | `src/eval/figures.py` | feature matrices |
+| `lead_time_curve.png` | `src/eval/lead_time.py` | computed in-run |
+
+Consolidated numbers for the report:
+[`outputs/tables/RESULTS_SUMMARY.md`](outputs/tables/RESULTS_SUMMARY.md).
+Findings, corrections and limitations: [`FINDINGS.md`](FINDINGS.md).
+
 ### Where output lands
 
 | Path | Contents | Committed? |

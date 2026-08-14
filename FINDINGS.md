@@ -330,6 +330,34 @@ usable common-support band, [0.5, 0.99), holds 15 trending and 28 non-trending
 
 **The planned within-language robustness check cannot be executed at all.**
 
+### D — restriction was attempted anyway, and it demonstrates the point
+
+The widest usable band of common language support — windows 50–99% Spanish, 15
+trending against 28 non-trending — was modelled despite being underpowered,
+because the alternative was leaving the possibility untested.
+
+| model on the common-support band | PR-AUC | chance |
+|---|---|---|
+| volume_only | 0.442 | 0.349 |
+| structure_size_free | 0.558 | 0.349 |
+| volume_extended | 0.712 | 0.349 |
+| full_fusion | 0.735 | 0.349 |
+| **Spanish share of window, alone** | **0.716** | **0.349** |
+
+**Inside the region selected for common language support, a classifier given
+nothing but the Spanish share of the window scores 0.716 — matching
+`volume_extended` at 0.712 and within noise of `full_fusion` at 0.735.**
+
+This is the strongest single piece of evidence in the confound analysis. The
+band was chosen precisely to be the slice where the two classes overlap in
+language, and language still predicts the label as well as the entire feature
+set does. **Restriction does not weaken the confound; it survives inside the
+region built to neutralise it.** That is a demonstration rather than an
+argument, and it is why no fourth control strategy is proposed.
+
+(The H1 null also holds on this subset: full_fusion vs volume_extended,
+McNemar p = 0.7744.)
+
 ### What this means
 
 In this corpus **a trending topic essentially *is* a multilingual topic**.
@@ -554,6 +582,67 @@ sparsity limitation already recorded, not evidence against the theory itself.
 
 No feature's importance interval excludes zero. The honest reading is that the
 ordering is suggestive and the magnitudes are not distinguishable from noise.
+
+---
+
+## 2026-08-13 — Running tally of defects found in this project's own work
+
+Kept visible deliberately. The count is not an embarrassment to be minimised —
+it is the evidence that the checks were actually running, and every entry below
+would have produced a *better-looking* result had it gone unnoticed.
+
+| # | defect | what it would have done | how it was caught |
+|---|---|---|---|
+| 1 | `betweenness_exact` emitted as a feature | a metadata flag scoring **AUC 0.793** while measuring nothing | per-feature audit before modelling |
+| 2 | `total_count` inherited from the prototype | whole-day volume, i.e. the peak being predicted, as the top feature | asking when each feature is measured |
+| 3 | `sent_n` in the sentiment arm | `window_tweets` under another name, **AUC 0.832**, crediting volume to sentiment | per-feature audit |
+| 4 | substring match in the size-proxy validator | rejected `mean_clustering` for containing `n_` — a false positive in the checking code itself | running the validator and reading its output |
+| 5 | `n_jobs=1` never reaching the model | a documented determinism guarantee that was not in force | **ruff**, as an unused-variable warning |
+| 6 | sentiment texts collected for primary units only | 11 units in the 30-minute-window setting scored with **all-zero sentiment features** — silent bias in the arm under test; corrected p moved **0.824 → 0.359** | reading the sweep's own diagnostic line |
+| 7 | figure palette | 4 of 5 colour-vision checks failed; two series indistinguishable | running the CVD validator |
+
+**Six of the seven made results look better, not worse.** None was found by a
+number looking wrong, because none of them made a number look wrong — that is
+the defining property of this class of defect. They were found by audits that
+ran regardless of whether anything seemed amiss: a per-feature size correlation,
+a linter, a palette validator, and a diagnostic line printed by a sweep that
+nobody was suspicious of.
+
+**#6 is worth singling out** because it occurred in the robustness code — the
+code whose entire purpose is checking other code. A check is not exempt from
+needing checks, which is also the lesson of #4.
+
+---
+
+## 2026-08-13 — Three domains, one principle: measure what is measurable
+
+The project produced the same lesson three times, in three unrelated places,
+each time by running a check instead of forming a judgement. Collected here
+because three independent instances make it a theme rather than an anecdote.
+
+| domain | the intuition | what measurement showed |
+|---|---|---|
+| **feature design** | "it's a ratio, so it's scale-free" | 12 features across 3 channels tracked sample size; `zero_bin_frac` at ρ = −0.858, `sent_n` identical to `window_tweets` (AUC 0.832) |
+| **model optimisation** | "int8 quantization is roughly free on CPU" | 12% faster, and **41.4% label agreement with fp32** — barely above the 33% chance rate for three classes |
+| **figure design** | "this palette looks clear" | failed 4 of 5 colour-vision checks; grey ↔ teal at **ΔE 1.9** under protanopia, **9.8** with normal vision |
+
+**The principle: a property that can be measured should never be assessed by
+eye.**
+
+What makes the three cases comparable is not that the intuitions were careless
+— each is a widely held, usually reasonable heuristic. It is that in every case
+a cheap, decisive check existed and the intuition was wrong anyway:
+
+* scale-freedom → a Spearman correlation against the size variable;
+* quantization safety → 400 tweets scored twice and compared;
+* palette legibility → a CVD simulator run over the adjacent pairs.
+
+Each check took minutes. Each overturned a conclusion that would otherwise have
+shipped. And critically, **in none of the three would the error have announced
+itself**: the ratios looked normalised, the quantized model produced plausible
+sentiment scores, and the figures looked fine. All three failure modes are
+silent by nature, which is exactly why the checks have to be routine rather
+than triggered by suspicion.
 
 ---
 
@@ -926,6 +1015,29 @@ that fusion is worthless.
 better-looking number obtained by relaxing the censoring filters, the size
 audit or the baseline specification — each of which was available and each of
 which was declined.
+
+### Resampling noise, measured
+
+The robustness checks happened to use a different CV seed and splitter from the
+headline table, which quantifies how much of the ablation table is signal. On
+**identical data and identical features**:
+
+| arm | headline table | robustness run | difference |
+|---|---|---|---|
+| full_fusion | 0.853 | 0.868 | +0.015 |
+| volume_only | 0.649 | 0.621 | −0.028 |
+| volume_extended | 0.820 | 0.821 | +0.001 |
+
+**Roughly ±0.02–0.03 PR-AUC moves from the resampling choice alone.** That is
+the same order as several of the differences between arms in the main table —
+`volume_extended` (0.820) versus `full_fusion` (0.853) is a 0.033 gap, barely
+outside this range.
+
+**Consequence for reading the results:** point estimates in the ablation table
+should not be ranked against each other at the third decimal, and differences
+below about 0.05 PR-AUC carry no interpretation. The bootstrap intervals, not
+the point estimates, are the reportable quantity. This is an additional reason
+the H1 comparison resolves to a null rather than a narrow win.
 
 ---
 
