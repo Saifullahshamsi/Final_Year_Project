@@ -36,6 +36,11 @@ from src.data.units import scan_nontrending, scan_trending
 
 EPS = 1e-9
 
+# Mirrors config.yaml `arima: order:`. Present so arima_features() is callable
+# without a config, and asserted equal to the config value in test_temporal.py
+# so the two cannot drift.
+DEFAULT_ARIMA_ORDER = (0, 1, 2)
+
 
 def _gini(x: np.ndarray) -> float:
     x = np.sort(np.asarray(x, dtype=float))
@@ -90,15 +95,39 @@ def shape_features(x: np.ndarray) -> dict:
     }
 
 
-def arima_features(history: np.ndarray) -> dict:
-    """ARIMA(1,1,1) on all legal pre-cutoff history.
+def coefficient_names(order: tuple[int, int, int]) -> list[str]:
+    """Which coefficient features an order produces.
+
+    The order determines the feature set, not the other way round: (0,1,2) has
+    no AR term, so there is no `arima_ar1` to emit. Keeping a zero-filled
+    `arima_ar1` around for continuity would feed the classifier a constant
+    column and imply the model estimates something it does not.
+    """
+    p, _, q = order
+    return ([f"arima_ar{i}" for i in range(1, p + 1)]
+            + [f"arima_ma{i}" for i in range(1, q + 1)])
+
+
+def arima_features(history: np.ndarray,
+                   order: tuple[int, int, int] = DEFAULT_ARIMA_ORDER) -> dict:
+    """ARIMA on all legal pre-cutoff history.
+
+    The order is selected, not assumed — see `src/eval/arima_order.py` and the
+    `arima:` block in config.yaml. The default here mirrors the config, and
+    `test_temporal.py` asserts the two cannot drift apart.
+
+    Coefficients are read out by statsmodels' own parameter names rather than by
+    position, because positional indexing silently returns the wrong parameter
+    the moment the order changes — which is exactly the change this function now
+    has to survive.
 
     Residual dispersion is divided by the series level so it does not become a
     volume feature. Convergence is recorded as metadata, not modelled.
     """
-    out = {"arima_ar1": 0.0, "arima_ma1": 0.0, "arima_resid_cv": 0.0,
-           "arima_resid_acf1": 0.0, "arima_forecast_ratio": 0.0,
-           "meta_arima_converged": 0}
+    coefs = coefficient_names(order)
+    out = {c: 0.0 for c in coefs}
+    out.update({"arima_resid_cv": 0.0, "arima_resid_acf1": 0.0,
+                "arima_forecast_ratio": 0.0, "meta_arima_converged": 0})
     y = np.asarray(history, dtype=float)
     if len(y) < 8 or y.sum() <= 0:
         return out
@@ -107,22 +136,27 @@ def arima_features(history: np.ndarray) -> dict:
         from statsmodels.tsa.arima.model import ARIMA
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            fit = ARIMA(y, order=(1, 1, 1),
+            fit = ARIMA(y, order=tuple(order),
                         enforce_stationarity=False,
                         enforce_invertibility=False).fit(method_kwargs={"warn_convergence": False})
             resid = np.asarray(fit.resid, dtype=float)
-            params = fit.params
-            ar = float(params[0]) if len(params) > 0 else 0.0
-            ma = float(params[1]) if len(params) > 1 else 0.0
+            named = dict(zip(fit.param_names,
+                             np.asarray(fit.params, dtype=float), strict=True))
             fc = float(np.asarray(fit.forecast(1))[0])
     except Exception:
         return out
 
+    p, _, q = order
+    for i in range(1, p + 1):
+        v = named.get(f"ar.L{i}", 0.0)
+        out[f"arima_ar{i}"] = float(v) if np.isfinite(v) else 0.0
+    for i in range(1, q + 1):
+        v = named.get(f"ma.L{i}", 0.0)
+        out[f"arima_ma{i}"] = float(v) if np.isfinite(v) else 0.0
+
     rc = resid - resid.mean()
     denom = float((rc * rc).sum())
     out.update({
-        "arima_ar1": ar if np.isfinite(ar) else 0.0,
-        "arima_ma1": ma if np.isfinite(ma) else 0.0,
         "arima_resid_cv": float(np.clip(resid.std() / level, 0, 50)),
         "arima_resid_acf1": (float((rc[:-1] * rc[1:]).sum() / denom)
                              if denom > EPS else 0.0),
@@ -133,14 +167,15 @@ def arima_features(history: np.ndarray) -> dict:
     return out
 
 
-def features_for_unit(row, series) -> dict:
+def features_for_unit(row, series,
+                      order: tuple[int, int, int] = DEFAULT_ARIMA_ORDER) -> dict:
     """series = the unit's feature-language counts across the whole band."""
     s, e = row.window_start_bin, row.window_end_bin
     window = series[s:e]
     history = series[:e]                    # everything legal before the cutoff
     f = {"topic": row.topic, "label": int(row.label)}
     f.update(shape_features(window))
-    f.update(arima_features(history))
+    f.update(arima_features(history, order))
     f["meta_history_bins"] = int(e)         # deterministic in peak position
     f["meta_window_bins"] = int(e - s)
     return f
@@ -175,8 +210,9 @@ def main() -> int:
     vh = cfg["validation_history"]
     full = band_from_config(cfg, hours=(vh["start_hour"], cfg["band"]["end_hour"]))
     units = pd.read_csv(f"{cfg['paths']['cache']}/units.csv")
+    order = tuple(cfg["arima"]["order"])
     print(f"{len(units)} units | feature language "
-          f"{cfg['language']['feature_language']!r}\n")
+          f"{cfg['language']['feature_language']!r} | ARIMA{order}\n")
 
     print("Scanning corpus for per-topic series ...")
     pos = scan_trending(cfg, band, full)
@@ -188,8 +224,8 @@ def main() -> int:
                              else ts.counts)
     print(f"  done ({time.time() - t0:.0f}s)\n")
 
-    rows = [features_for_unit(r, series[r.topic]) for r in units.itertuples()
-            if r.topic in series]
+    rows = [features_for_unit(r, series[r.topic], order)
+            for r in units.itertuples() if r.topic in series]
     df = pd.DataFrame(rows)
     feats = [c for c in df.columns
              if c not in ("topic", "label") and not c.startswith("meta_")]
@@ -198,7 +234,7 @@ def main() -> int:
 
     conv = int(df.meta_arima_converged.sum())
     print(f"TEMPORAL FEATURES: {len(df)} units x {len(feats)} features")
-    print(f"  ARIMA(1,1,1) converged on {conv}/{len(df)} units "
+    print(f"  ARIMA{order} converged on {conv}/{len(df)} units "
           f"({100 * conv / len(df):.1f}%)")
     print(f"  history length: median {df.meta_history_bins.median():.0f} bins, "
           f"min {df.meta_history_bins.min():.0f}, "

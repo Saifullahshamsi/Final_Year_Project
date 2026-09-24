@@ -15,8 +15,8 @@
     "monotone_up_frac",
     "zero_bin_frac",
     "acf1",
-    "arima_ar1",
     "arima_ma1",
+    "arima_ma2",
     "arima_resid_cv",
     "arima_resid_acf1",
     "arima_forecast_ratio"
@@ -106,39 +106,39 @@
       "spearman_with_volume": 0.4698,
       "arm": "volume"
     },
-    "arima_ar1": {
-      "mean_trending": 0.031184677323088907,
-      "mean_non_trending": -0.044849891521630714,
-      "univariate_auc": 0.6020799124247401,
-      "spearman_with_volume": 0.0259,
-      "arm": "temporal"
-    },
     "arima_ma1": {
-      "mean_trending": -0.5205656028124613,
-      "mean_non_trending": -0.7908654405137048,
-      "univariate_auc": 0.6223316912972084,
-      "spearman_with_volume": 0.4334,
+      "mean_trending": -0.47042058676635484,
+      "mean_non_trending": -0.8440280695731792,
+      "univariate_auc": 0.8095238095238095,
+      "spearman_with_volume": 0.5567,
       "arm": "volume"
     },
+    "arima_ma2": {
+      "mean_trending": -0.07613523453107025,
+      "mean_non_trending": 0.02004625101397762,
+      "univariate_auc": 0.6258894362342639,
+      "spearman_with_volume": -0.1122,
+      "arm": "temporal"
+    },
     "arima_resid_cv": {
-      "mean_trending": 1.0865470386588778,
-      "mean_non_trending": 1.0854789161115164,
+      "mean_trending": 1.0819386479627817,
+      "mean_non_trending": 1.0802223835734712,
       "univariate_auc": 0.5708812260536398,
-      "spearman_with_volume": -0.5677,
+      "spearman_with_volume": -0.5647,
       "arm": "volume"
     },
     "arima_resid_acf1": {
-      "mean_trending": -0.020159374178406343,
-      "mean_non_trending": -0.037718737866188276,
-      "univariate_auc": 0.5894909688013137,
-      "spearman_with_volume": 0.0924,
+      "mean_trending": -0.02952218159627895,
+      "mean_non_trending": -0.03812055339296795,
+      "univariate_auc": 0.5552818828680898,
+      "spearman_with_volume": -0.0425,
       "arm": "temporal"
     },
     "arima_forecast_ratio": {
-      "mean_trending": 1.77684240622712,
-      "mean_non_trending": 2.936553588422284,
-      "univariate_auc": 0.544471811713191,
-      "spearman_with_volume": -0.0736,
+      "mean_trending": 1.7439805164625148,
+      "mean_non_trending": 2.7073460036073964,
+      "univariate_auc": 0.533935413245758,
+      "spearman_with_volume": -0.0762,
       "arm": "temporal"
     }
   },

@@ -11,7 +11,13 @@ import pandas as pd
 import pytest
 
 from src.data.loading import load_config
-from src.features.temporal import arima_features, shape_features, size_proxy_audit
+from src.features.temporal import (
+    DEFAULT_ARIMA_ORDER,
+    arima_features,
+    coefficient_names,
+    shape_features,
+    size_proxy_audit,
+)
 
 
 @pytest.fixture
@@ -106,7 +112,38 @@ class TestArima:
     def test_too_short_a_series_is_refused_not_faked(self):
         f = arima_features(np.array([1.0, 2.0, 3.0]))
         assert f["meta_arima_converged"] == 0
-        assert f["arima_ar1"] == 0.0
+        for c in coefficient_names(DEFAULT_ARIMA_ORDER):
+            assert f[c] == 0.0
+
+    def test_the_order_determines_which_coefficients_exist(self):
+        """A coefficient the order cannot estimate must not appear.
+
+        Under (0,1,2) there is no AR term, so emitting a zero-filled arima_ar1
+        would hand the classifier a constant column and imply the model
+        estimates something it does not.
+        """
+        assert coefficient_names((0, 1, 2)) == ["arima_ma1", "arima_ma2"]
+        assert coefficient_names((1, 1, 1)) == ["arima_ar1", "arima_ma1"]
+        rng = np.random.default_rng(3)
+        y = np.cumsum(rng.normal(2, 1, 60)).clip(0)
+        f = arima_features(y, (0, 1, 2))
+        assert "arima_ar1" not in f
+        assert {"arima_ma1", "arima_ma2"} <= set(f)
+
+    def test_coefficients_are_read_by_name_not_position(self):
+        """Positional indexing returns the wrong parameter when the order
+        changes; under (2,1,0) params[1] is ar.L2, not an MA term."""
+        rng = np.random.default_rng(4)
+        y = np.cumsum(rng.normal(2, 1, 60)).clip(0)
+        f = arima_features(y, (2, 1, 0))
+        assert set(coefficient_names((2, 1, 0))) == {"arima_ar1", "arima_ar2"}
+        assert "arima_ma1" not in f
+
+    def test_default_order_matches_config(self, cfg):
+        """The module default exists so arima_features() is callable without a
+        config. If the two drift, features silently stop matching the selected
+        order recorded in outputs/tables/arima_order_selection.json."""
+        assert tuple(cfg["arima"]["order"]) == DEFAULT_ARIMA_ORDER
 
     def test_all_zero_history_is_refused(self):
         assert arima_features(np.zeros(40))["meta_arima_converged"] == 0

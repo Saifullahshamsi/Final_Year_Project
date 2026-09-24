@@ -127,19 +127,19 @@
       "spearman_with_volume": 0.2288,
       "flagged": false
     },
-    "arima_ar1": {
+    "arima_ma2": {
       "arm": "temporal",
-      "spearman_with_volume": 0.0259,
+      "spearman_with_volume": -0.1122,
       "flagged": false
     },
     "arima_resid_acf1": {
       "arm": "temporal",
-      "spearman_with_volume": 0.0924,
+      "spearman_with_volume": -0.0425,
       "flagged": false
     },
     "arima_forecast_ratio": {
       "arm": "temporal",
-      "spearman_with_volume": -0.0736,
+      "spearman_with_volume": -0.0762,
       "flagged": false
     }
   },

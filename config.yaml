@@ -171,7 +171,11 @@ features:
     - mass_centroid
     - frac_last_quarter
     - log_half_ratio
-    - arima_ar1
+    # Second MA coefficient under the selected (0,1,2) order. rho +/-0.112 with
+    # window_tweets, comfortably inside the threshold, and it replaces the
+    # arima_ar1 that the old (1,1,1) order produced. The order change did not
+    # alter how many features the channel contributes: 9 before, 9 now.
+    - arima_ma2             # rho -0.112, AUC 0.626 — clean
     - arima_resid_acf1
     - arima_forecast_ratio
 
@@ -188,7 +192,12 @@ features:
     - zero_bin_frac         # rho -0.858 — a discretisation artifact of low counts
     - arima_resid_cv        # rho -0.568 — Poisson dispersion again
     - acf1                  # rho +0.470 — highest temporal AUC (0.855); arguable, so volume
-    - arima_ma1             # rho +0.433 — arguable, so volume
+    # First MA coefficient under the selected (0,1,2) order. It fails the audit
+    # harder than the old order's arima_ma1 did (rho +0.433 -> +0.557) and is
+    # the second strongest univariate discriminator in the channel at AUC 0.810
+    # — which is the point: a feature that predicts well *because* it tracks
+    # volume belongs in volume, where it cannot be credited to the temporal arm.
+    - arima_ma1             # rho +0.557, AUC 0.810 — size proxy
 
   # Scale-invariant: ratios, bounded fractions, normalised inequality measures
   # and growth slopes normalised by their own final value. Zero raw counts.
@@ -259,6 +268,28 @@ audit:
   # One declared proxy for volume, used for every audit and every
   # residualisation. Never chosen per feature.
   volume_proxy: window_tweets
+
+# ARIMA order for the temporal channel's residual features.
+#
+# (0,1,2), SELECTED — not assumed. The order was previously (1,1,1) by
+# convention, hardcoded in temporal.py. src/eval/arima_order.py fits a 16-order
+# grid to all 129 pre-cutoff histories and scores AIC and BIC over the units
+# where every order converged (all 129 did). Evidence in
+# outputs/tables/arima_order_selection.json:
+#
+#   d = 1: differencing moves ADF rejection of a unit root from 51.9% to 84.5%
+#          of series, and KPSS rejection of stationarity from 54.3% to 10.9%.
+#          Both tests agree after differencing.
+#   (p,q): (0,1,2) is best on mean AIC (192.13) and mean BIC (197.33), and wins
+#          on 34/129 units by AIC and 52/129 by BIC. The old (1,1,1) sits at
+#          195.76 / 201.04 and wins on ZERO units under either criterion. The
+#          data prefers no AR term at all.
+#
+# Selection reads no labels, so it cannot leak outcome information into the
+# features. Changing this order changes which coefficients exist as features,
+# so the feature lists below must be kept consistent with it.
+arima:
+  order: [0, 1, 2]
 
 evaluation:
   decision_threshold: 0.5         # for F1 / precision / recall / McNemar
