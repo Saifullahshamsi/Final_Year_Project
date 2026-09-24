@@ -1,0 +1,158 @@
+{
+  "n_units": 129,
+  "n_histories": 129,
+  "n_complete": 129,
+  "median_history_bins": 54,
+  "stationarity": {
+    "adf_level_reject": 67,
+    "kpss_level_reject": 70,
+    "adf_diff_reject": 109,
+    "kpss_diff_reject": 14,
+    "n": 129
+  },
+  "current_order": [
+    1,
+    1,
+    1
+  ],
+  "best_by_mean_aic": [
+    0,
+    1,
+    2
+  ],
+  "best_by_mean_bic": [
+    0,
+    1,
+    2
+  ],
+  "orders": {
+    "[0, 0, 1]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 203.583,
+      "mean_bic": 208.938,
+      "aic_wins": 0,
+      "bic_wins": 0
+    },
+    "[0, 0, 2]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 197.966,
+      "mean_bic": 205.005,
+      "aic_wins": 14,
+      "bic_wins": 5
+    },
+    "[0, 1, 1]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 195.69,
+      "mean_bic": 199.209,
+      "aic_wins": 2,
+      "bic_wins": 35
+    },
+    "[0, 1, 2]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 192.129,
+      "mean_bic": 197.33,
+      "aic_wins": 34,
+      "bic_wins": 52
+    },
+    "[1, 0, 0]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 202.96,
+      "mean_bic": 208.388,
+      "aic_wins": 0,
+      "bic_wins": 0
+    },
+    "[1, 0, 1]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 196.334,
+      "mean_bic": 203.474,
+      "aic_wins": 1,
+      "bic_wins": 1
+    },
+    "[1, 0, 2]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 193.139,
+      "mean_bic": 201.938,
+      "aic_wins": 32,
+      "bic_wins": 9
+    },
+    "[1, 1, 0]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 206.019,
+      "mean_bic": 209.588,
+      "aic_wins": 0,
+      "bic_wins": 0
+    },
+    "[1, 1, 1]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 195.758,
+      "mean_bic": 201.037,
+      "aic_wins": 0,
+      "bic_wins": 0
+    },
+    "[1, 1, 2]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 192.863,
+      "mean_bic": 199.799,
+      "aic_wins": 12,
+      "bic_wins": 9
+    },
+    "[2, 0, 0]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 198.75,
+      "mean_bic": 205.889,
+      "aic_wins": 0,
+      "bic_wins": 0
+    },
+    "[2, 0, 1]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 197.186,
+      "mean_bic": 206.111,
+      "aic_wins": 1,
+      "bic_wins": 0
+    },
+    "[2, 0, 2]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 193.77,
+      "mean_bic": 204.329,
+      "aic_wins": 16,
+      "bic_wins": 7
+    },
+    "[2, 1, 0]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 198.823,
+      "mean_bic": 204.102,
+      "aic_wins": 2,
+      "bic_wins": 3
+    },
+    "[2, 1, 1]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 195.696,
+      "mean_bic": 202.735,
+      "aic_wins": 0,
+      "bic_wins": 2
+    },
+    "[2, 1, 2]": {
+      "converged": 129,
+      "converged_frac": 1.0,
+      "mean_aic": 192.661,
+      "mean_bic": 201.33,
+      "aic_wins": 15,
+      "bic_wins": 6
+    }
+  }
+}
