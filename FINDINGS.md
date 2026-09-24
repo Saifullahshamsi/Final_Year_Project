@@ -6,6 +6,20 @@ here deliberately — they are part of the work, not a tidy-up list.
 
 Every number below traces to a script in this repository. Nothing is estimated.
 
+> **Superseded numbers — read before quoting any figure below.** On
+> **2026-09-24** the ARIMA order was selected against the data and changed from
+> (1,1,1) to (0,1,2), and every result that depends on the temporal channel was
+> re-run. Entries dated 2026-08-13 record what was true under the old order and
+> are **left unedited on purpose** — this is a log, and rewriting a dated entry
+> to match a later run would destroy the thing it exists to provide. For the
+> current value of any number involving `temporal_only`, `volume_plus_temporal`,
+> `full_fusion`, `volume_extended` or the common-support band, use
+> `outputs/tables/RESULTS_SUMMARY.md`, which is now **generated** from the
+> result JSONs. The final entry in this file lists every number that moved.
+>
+> **H1 and H2 conclusions are unchanged.** H1 remains not supported; H2 remains
+> directional. Nothing in the argument below depends on the superseded values.
+
 ---
 
 ## 2026-08-08 — Corpus verification
@@ -600,8 +614,9 @@ would have produced a *better-looking* result had it gone unnoticed.
 | 5 | `n_jobs=1` never reaching the model | a documented determinism guarantee that was not in force | **ruff**, as an unused-variable warning |
 | 6 | sentiment texts collected for primary units only | 11 units in the 30-minute-window setting scored with **all-zero sentiment features** — silent bias in the arm under test; corrected p moved **0.824 → 0.359** | reading the sweep's own diagnostic line |
 | 7 | figure palette | 4 of 5 colour-vision checks failed; two series indistinguishable | running the CVD validator |
+| 8 | ARIMA order fixed at (1,1,1) by convention | an AR coefficient the data does not support, standing as the **top temporal feature** by permutation importance (+0.040) | external review asked for a justification; the selection then showed (1,1,1) wins on **0 of 129** units |
 
-**Six of the seven made results look better, not worse.** None was found by a
+**Seven of the eight made results look better, not worse.** None was found by a
 number looking wrong, because none of them made a number look wrong — that is
 the defining property of this class of defect. They were found by audits that
 ran regardless of whether anything seemed amiss: a per-feature size correlation,
@@ -611,6 +626,16 @@ nobody was suspicious of.
 **#6 is worth singling out** because it occurred in the robustness code — the
 code whose entire purpose is checking other code. A check is not exempt from
 needing checks, which is also the lesson of #4.
+
+**#8 is the one this project's own audits did not catch**, and it is worth
+being precise about why. Every other entry was found by a check that ran
+whether or not anything looked wrong. #8 had no such check, because the size-
+proxy audit asks *"does this feature track volume?"* and `arima_ar1` honestly
+did not — it was a legitimate feature of a model whose **specification** was
+never tested. The audit was aimed at one failure mode and found every instance
+of it. An unexamined modelling assumption is a different failure mode, and it
+took an outside reader to ask. That is an argument for external review as a
+distinct check, not a substitute for the internal ones.
 
 ---
 
@@ -1618,3 +1643,152 @@ not of taste.**
 This also means the prototype's ROC figures and this pipeline's ROC figures are
 **not directly comparable** — different prevalence, different unit definition.
 They are reported separately and never merged into one table.
+
+---
+
+## 2026-09-24 — The ARIMA order was never justified, and the data rejects it
+
+External review of the draft asked why the temporal channel uses ARIMA(1,1,1).
+There was no answer. The order was chosen by convention and hardcoded in
+`src/features/temporal.py`, in a project whose own rule is that no magic
+numbers live in code. The reviewer was right to ask, and the result is worse
+than "unjustified".
+
+### What the selection shows
+
+`src/eval/arima_order.py` fits a 16-order grid to all 129 pre-cutoff histories
+— the exact series the feature extractor sees — and scores AIC and BIC over the
+units where every order converged. All 129 converged under every order, so the
+comparison rests on the full sample. The procedure reads **no labels**, so it
+cannot leak outcome information into the features.
+
+**Differencing is justified.** ADF and KPSS disagree on the levels and agree
+after first differences, which is the pattern that supports `d = 1`:
+
+| test | on levels | on first differences |
+|---|---|---|
+| ADF rejects unit root | 51.9% | **84.5%** |
+| KPSS rejects stationarity | 54.3% | **10.9%** |
+
+**The order was not.**
+
+| order | mean AIC | mean BIC | AIC wins | BIC wins |
+|---|---|---|---|---|
+| **(0,1,2)** | **192.13** | **197.33** | 34 | **52** |
+| (0,1,1) | 195.69 | 199.21 | 2 | 35 |
+| (1,1,2) | 192.86 | 199.80 | 12 | 9 |
+| **(1,1,1)** — the order in use | 195.76 | 201.04 | **0** | **0** |
+
+(1,1,1) is not merely suboptimal. It wins on **zero of 129 units** under either
+criterion. The data prefers **no AR term at all**.
+
+That matters more than a model-fit statistic, because the AR coefficient was
+not just fitted — it was a *feature*. `arima_ar1` stood at the top of the
+permutation-importance table for `full_fusion` (+0.040 ± 0.037). The model's
+most informative temporal input was a coefficient estimating something the
+series does not contain.
+
+### What changed when (0,1,2) was adopted
+
+The order determines which coefficients exist, so the feature set changes with
+it. `coefficient_names()` now derives the columns from the order, and the
+coefficients are read out by statsmodels' own parameter names rather than by
+position — positional indexing returns a different parameter the moment the
+order moves, which is precisely the change the code now has to survive.
+
+| | under (1,1,1) | under (0,1,2) |
+|---|---|---|
+| coefficients emitted | `arima_ar1`, `arima_ma1` | `arima_ma1`, `arima_ma2` |
+| assigned to temporal | `arima_ar1` | `arima_ma2` (rho −0.112) |
+| assigned to volume | `arima_ma1` (rho +0.433) | `arima_ma1` (rho **+0.557**) |
+| temporal channel size | 9 features | 9 features |
+
+The audit was re-run, not assumed. `arima_ma1` fails it harder under the new
+order (rho +0.433 → +0.557, AUC 0.810), and `arima_ma2` passes cleanly. The
+conservative rule was applied exactly as before, and the channel happens to
+contribute the same number of features, so every arm's feature count is
+unchanged and the ablation remains comparable.
+
+### Every number that moved
+
+Only arms that touch the temporal channel moved. The rest are bit-identical,
+which is itself the check that the change was surgical rather than diffuse.
+
+| arm | (1,1,1) | (0,1,2) | Δ |
+|---|---|---|---|
+| volume_only | 0.649 | 0.649 | — |
+| structure_size_free | 0.689 | 0.689 | — |
+| sentiment_only | 0.564 | 0.564 | — |
+| volume_plus_structure | 0.829 | 0.829 | — |
+| volume_plus_sentiment | 0.789 | 0.789 | — |
+| structure_residualised | 0.707 | 0.707 | — |
+| **temporal_only** | 0.654 | **0.565** | **−0.089** |
+| **volume_plus_temporal** | 0.783 | **0.747** | **−0.036** |
+| full_fusion | 0.853 | 0.856 | +0.003 |
+| full_fusion_regularised | 0.822 | 0.820 | −0.002 |
+| volume_extended | 0.820 | 0.805 | −0.014 |
+
+**The temporal channel is weaker than it looked.** Standing alone it drops from
+0.654 to 0.565 — from clearly above the 3-feature volume baseline to level with
+sentiment, the weakest channel. Nearly all of the temporal channel's apparent
+standalone signal was carried by a coefficient the data does not support.
+
+Fusion is unmoved (+0.003), which is the expected shape: a 31-feature
+gradient-boosted model does not depend on any single input, and what `arima_ar1`
+was contributing is recoverable from the other 30 columns.
+
+### Effect on the hypotheses
+
+**H1 — still not supported, and the test is now cleaner.**
+
+| | (1,1,1) | (0,1,2) |
+|---|---|---|
+| full_fusion vs volume_extended | 0.853 vs 0.820 | 0.856 vs 0.805 |
+| McNemar | 9 / 12 discordant, p = 0.6636 | **10 / 10 discordant, p = 1.0000** |
+
+The PR-AUC gap widened to 0.051 while the decision-level test moved to a perfect
+tie. Those two facts are not in tension: PR-AUC scores the *ranking*, McNemar
+scores the *decisions at threshold 0.5*, and at this sample size a 0.05 ranking
+difference is inside the ±0.02–0.03 resampling noise already recorded. The two
+models are wrong about a different case exactly ten times each. **Where the two
+disagree, the decision-level test is the one to quote**, because it is paired on
+identical units and makes no distributional assumption.
+
+**H2 — completely unchanged.** Every nested lead-time number and every H2
+p-value is identical to four decimal places (0.3877, 0.2668, 0.1185, 0.0347),
+because neither `volume_only` nor `volume_plus_structure` contains a temporal
+feature. The H2 evidence never depended on the ARIMA specification. That is a
+property of the arms chosen for the test, not luck this time.
+
+**The language confound — one number flipped, the conclusion did not.** Inside
+the common-support band (n = 43), `volume_extended` moved 0.712 → **0.811**,
+so the previously recorded framing — *"language (0.716) matches
+`volume_extended` (0.712)"* — no longer holds. The correct statement is the
+weaker and more defensible one: **language alone still scores 0.716 in the band
+built to neutralise it, a lift of +0.367 over the 0.349 chance rate.** At n = 43
+nothing separates 0.716 from 0.811, and it was always a mistake to lean on a
+rank ordering between two arms in a 43-unit sample. The confound surviving
+restriction is the finding; which arm leads inside the restriction is noise.
+
+### Two process changes
+
+**`RESULTS_SUMMARY.md` is now generated, not typed.** Every number is read from
+the result JSONs by `src/eval/results_summary.py`. The re-run above is exactly
+the event that would previously have left a hand-maintained summary half-updated
+— which is the inconsistency the draft review flagged. A generated file cannot
+drift from the run that produced it, and cannot be partially corrected.
+
+**The Spanish-share quantiles are now saved, not printed.** The class overlap in
+language is the entire argument for why within-language restriction is
+impossible, and a number that only ever reached a console could not be checked
+against the report.
+
+### What this says about the review
+
+The internal audits in this project were aimed at one failure mode — features
+that track volume — and they caught every instance of it, including four in
+checking code. They could not catch this, because `arima_ar1` was not a volume
+proxy. It was an honest feature of a model whose specification nobody had
+tested. Different failure mode, different check required, and the check came
+from outside. That is an argument for external review as a distinct instrument
+rather than a backstop for the internal one.

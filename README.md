@@ -35,7 +35,7 @@ raw corpus (2 CSVs, ~1.2 GB, 2020-02-25)
   ↓  restrict       16:00–23:59 — the only band both pools cover
   ↓  units          bin activity → detect peak → drop left- and right-censored topics
   ↓                 → emit windows ending a fixed lead before peak
-  ↓  features       ┌─ temporal   normalised curve shape + ARIMA(1,1,1) residual features
+  ↓  features       ┌─ temporal   normalised curve shape + ARIMA(0,1,2) residual features
   ↓                 ├─ sentiment  XLM-T multilingual polarity, VADER (English baseline)
   ↓                 └─ network    mention/reply interaction-graph structure
   ↓  audit          size-proxy audit: |Spearman| vs window_tweets >= 0.4 reassigned to volume
@@ -46,7 +46,7 @@ raw corpus (2 CSVs, ~1.2 GB, 2020-02-25)
 | Channel | Content | Features kept after audit | Status |
 |---|---|---|---|
 | Network | mention/reply interaction-graph structure | 10 size-free of 32 | done |
-| Temporal | normalised shape + ARIMA(1,1,1) residuals | 9 size-free of 17 | done |
+| Temporal | normalised shape + ARIMA(0,1,2) residuals | 9 size-free of 17 | done |
 | Sentiment | XLM-T multilingual polarity | 9 | done |
 
 No LSTM. With 129 units and 42 positives a sequence model would overfit the
@@ -143,6 +143,9 @@ previous one's cached output; nothing is hand-edited at any stage.
 .venv/Scripts/python -m src.features.sentiment
 ```
 ```bash
+.venv/Scripts/python -m src.eval.arima_order
+```
+```bash
 .venv/Scripts/python -m src.features.temporal
 ```
 ```bash
@@ -210,6 +213,7 @@ Every data and evaluation parameter lives in [`config.yaml`](config.yaml).
 | `post_peak_decay_frac` | 0.70 | decay required after peak to call it a peak |
 | `size_proxy_spearman_threshold` | 0.4 | \|Spearman\| vs `window_tweets` above which a feature is reassigned to volume |
 | `volume_proxy` | `window_tweets` | the declared volume proxy |
+| `arima.order` | `[0, 1, 2]` | **selected, not assumed** — see below |
 | `seed` | 42 | every stochastic component |
 | `cv_folds` / `cv_repeats` | 5 / 8 | grouped stratified CV |
 | `n_bootstrap` | 1000 | bootstrap resamples for CIs |
@@ -218,6 +222,18 @@ Every data and evaluation parameter lives in [`config.yaml`](config.yaml).
 `min_window_tweets` was lowered from 20 to 15 to reach a usable sample. It was
 set from unit counts alone, before any classifier ran — recorded in
 [`outputs/tables/parameter_decision.md`](outputs/tables/parameter_decision.md).
+
+**The ARIMA order is selected against the data, not assumed.**
+`python -m src.eval.arima_order` fits a 16-order grid to all 129 pre-cutoff
+histories and scores AIC and BIC over the units where every order converged
+(all 129 did). Differencing is justified: ADF rejection of a unit root rises
+from 51.9% of series to 84.5% after first differences, and KPSS rejection of
+stationarity falls from 54.3% to 10.9%, so both tests agree on `d = 1`.
+(0,1,2) then wins on mean AIC (192.13) and mean BIC (197.33). The order used
+previously, (1,1,1), sits at 195.76 / 201.04 and wins on **zero** of 129
+units under either criterion — the data prefers no AR term at all. Selection
+reads no labels, so it cannot leak outcome information into the features.
+Evidence: [`outputs/tables/arima_order_selection.json`](outputs/tables/arima_order_selection.json).
 
 **Classifier.** `HistGradientBoostingClassifier`, defined in
 [`src/models/fusion.py`](src/models/fusion.py):
@@ -304,19 +320,25 @@ leakage is ever introduced, that test fails.
 | Chance | 0 | 0.326 | — | 0.500 | — |
 | Volume only | 3 | 0.649 | [0.509, 0.771] | 0.724 | 0.571 |
 | Sentiment only | 9 | 0.564 | [0.435, 0.745] | 0.783 | 0.617 |
-| Temporal only | 9 | 0.654 | [0.512, 0.789] | 0.764 | 0.622 |
+| Temporal only | 9 | 0.565 | [0.419, 0.714] | 0.692 | 0.571 |
 | Structure only (size-free) | 10 | 0.689 | [0.551, 0.804] | 0.730 | 0.561 |
 | Volume + structure | 13 | 0.829 | [0.719, 0.910] | 0.869 | 0.709 |
-| **Full fusion** | 31 | **0.853** | [0.756, 0.927] | 0.891 | 0.727 |
-| **`volume_extended`** (baseline) | 33 | 0.820 | [0.701, 0.912] | 0.889 | **0.780** |
+| **Full fusion** | 31 | **0.856** | [0.760, 0.930] | 0.893 | 0.734 |
+| **`volume_extended`** (baseline) | 33 | 0.805 | [0.684, 0.894] | 0.873 | **0.747** |
 
 ### H1 — not supported
 
-Full fusion beats `volume_only` (0.853 vs 0.649, McNemar p = 0.0059). It does
-**not** beat `volume_extended`: **0.853 vs 0.820, p = 0.6636**, and
-`volume_extended` has the higher F1 and recall. Most of fusion's apparent
+Full fusion beats `volume_only` (0.856 vs 0.649, McNemar p = 0.0041). It does
+**not** beat `volume_extended`: **0.856 vs 0.805, p = 1.0000** — the two
+models are wrong about a different case exactly ten times each — and
+`volume_extended` still has the higher F1 and recall. Most of fusion's apparent
 advantage over a three-feature baseline is volume re-encoded through other
 channels, which is why the audit and the extended baseline exist.
+
+Note that the PR-AUC gap (0.051) and the decision-level test disagree. Ranking
+improves slightly; the binary decisions at threshold 0.5 do not. With
+resampling noise at ±0.02–0.03 a gap of 0.05 is at the edge of what this
+sample can resolve, so the McNemar result is the one to trust.
 
 ### H2 — supported directionally, not statistically
 
@@ -354,8 +376,12 @@ corpus: topic-level language matching (no English negatives exist), tweet-level
 filtering (features recover language at ROC 0.735–0.812 anyway), and
 within-language restriction (the non-trending minimum Spanish share, 0.824,
 exceeds the trending 75th percentile, 0.814 — the distributions barely
-overlap). Restricting to the common-support band (n = 43) does not help:
-language alone scores 0.716 there against `volume_extended`'s 0.712.
+overlap). Restricting to the common-support band does not neutralise it
+either: with n = 43 and chance at 0.349, language alone still scores 0.716
+there — a lift of +0.367 over chance inside the region built to remove it.
+`volume_extended` scores 0.811 in the same band, so language does not *lead*
+there; but 43 units cannot separate 0.716 from 0.811, and the confound is
+plainly still present in the restricted sample.
 
 **What survives.** H2 is a within-topic contrast — the same 52 topics at every
 lead, so the confound is constant while the effect varies. That is a fortunate
