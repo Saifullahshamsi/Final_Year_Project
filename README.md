@@ -35,18 +35,23 @@ raw corpus (2 CSVs, ~1.2 GB, 2020-02-25)
   ↓  restrict       16:00–23:59 — the only band both pools cover
   ↓  units          bin activity → detect peak → drop left- and right-censored topics
   ↓                 → emit windows ending a fixed lead before peak
-  ↓  features       ┌─ temporal   volume slope/acceleration, ARIMA residuals, LSTM embeddings
+  ↓  features       ┌─ temporal   normalised curve shape + ARIMA(1,1,1) residual features
   ↓                 ├─ sentiment  XLM-T multilingual polarity, VADER (English baseline)
   ↓                 └─ network    mention/reply interaction-graph structure
+  ↓  audit          size-proxy audit: |Spearman| vs window_tweets >= 0.4 reassigned to volume
   ↓  fusion         gradient-boosted trees over the concatenated channels
   ↓  evaluation     PR-AUC (headline), grouped CV, ablation, lead-time curve, significance
 ```
 
-| Channel | Content | Status |
-|---|---|---|
-| Network | mention/reply interaction graph structure | **validated as prototype** |
-| Temporal | ARIMA + LSTM on volume curves | in progress |
-| Sentiment | XLM-T multilingual polarity | in progress |
+| Channel | Content | Features kept after audit | Status |
+|---|---|---|---|
+| Network | mention/reply interaction-graph structure | 10 size-free of 32 | done |
+| Temporal | normalised shape + ARIMA(1,1,1) residuals | 9 size-free of 17 | done |
+| Sentiment | XLM-T multilingual polarity | 9 | done |
+
+No LSTM. With 129 units and 42 positives a sequence model would overfit the
+arm under test; the decision was taken before any model ran and the rationale
+is recorded in [FINDINGS.md](FINDINGS.md).
 
 ## Status
 
@@ -55,11 +60,15 @@ raw corpus (2 CSVs, ~1.2 GB, 2020-02-25)
 | Corpus verification | done — see [FINDINGS.md](FINDINGS.md) |
 | `src/data/loading.py` — streaming, parsing, binning | done |
 | `src/data/units.py` — peak detection, censoring, windows | done |
-| Language control (tweet-level) | done |
-| Network channel | prototype validated; refactor pending |
-| Sentiment channel | not started |
-| Temporal channel | not started |
-| Fusion + evaluation | not started |
+| Language control (tweet-level) | done — **the control fails; see Results** |
+| Network channel | done |
+| Sentiment channel | done |
+| Temporal channel | done |
+| Fusion + ablation | done — 12 arms |
+| Lead-time sweep, robustness, figures | done |
+
+The pipeline is complete end to end. 182 tests pass, lint is clean, and every
+number below traces to a script in this repository.
 
 ## Setup
 
@@ -184,6 +193,65 @@ Findings, corrections and limitations: [`FINDINGS.md`](FINDINGS.md).
 | `outputs/cache/` | regenerable intermediates (`units.csv`, feature CSVs) | no |
 | `dataset/` | the raw corpus | **no — never** |
 
+## Parameters and hyperparameters
+
+Every data and evaluation parameter lives in [`config.yaml`](config.yaml).
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `bin_minutes` | 5 | activity bin width |
+| `smooth_bins` | 3 | moving-average width before peak detection |
+| `min_topic_tweets` | 50 | minimum tweets for a topic to be considered |
+| `window_minutes` | 90 | feature-window length |
+| `lead_minutes` | 60 | gap between window close and peak |
+| `min_window_tweets` | 15 | minimum tweets inside the window |
+| `left_censor_frac` | 0.25 | onset must be below this fraction of peak at band start |
+| `min_post_peak_bins` | 12 | bins of post-peak history required |
+| `post_peak_decay_frac` | 0.70 | decay required after peak to call it a peak |
+| `size_proxy_spearman_threshold` | 0.4 | \|Spearman\| vs `window_tweets` above which a feature is reassigned to volume |
+| `volume_proxy` | `window_tweets` | the declared volume proxy |
+| `seed` | 42 | every stochastic component |
+| `cv_folds` / `cv_repeats` | 5 / 8 | grouped stratified CV |
+| `n_bootstrap` | 1000 | bootstrap resamples for CIs |
+| `n_permutations` | 100 | permutation test / importance |
+
+`min_window_tweets` was lowered from 20 to 15 to reach a usable sample. It was
+set from unit counts alone, before any classifier ran — recorded in
+[`outputs/tables/parameter_decision.md`](outputs/tables/parameter_decision.md).
+
+**Classifier.** `HistGradientBoostingClassifier`, defined in
+[`src/models/fusion.py`](src/models/fusion.py):
+
+| | default arm | regularised arm |
+|---|---|---|
+| `max_iter` | 250 | 120 |
+| `learning_rate` | 0.1 | 0.05 |
+| `max_leaf_nodes` | 31 | 4 |
+| `max_depth` | none | 3 |
+| `min_samples_leaf` | 5 | 15 |
+| `l2_regularization` | 0.0 | 1.0 |
+| `class_weight` | balanced | balanced |
+| `early_stopping` | off | off |
+
+The regularised arm exists to separate overfitting from genuine fusion benefit:
+with 31 features and 42 positives the study runs near one feature per positive
+case, so the two arms are reported together.
+
+Hyperparameters were **not** tuned. There is no inner tuning loop, so no
+selection effect inflates any arm; with 129 units a nested search would consume
+the sample the hypotheses are tested on.
+
+**Determinism.** `n_jobs: 1` is a deliberate choice, not a hardware limit.
+`HistGradientBoostingClassifier` has no `n_jobs` parameter — it parallelises
+through OpenMP — so thread count is pinned at the call site with
+`threadpool_limits`. Passing `n_jobs` to the estimator would be silently
+ignored, which it was, until a lint pass caught it (see [FINDINGS.md](FINDINGS.md)).
+
+**Sentiment model.** `cardiffnlp/twitter-xlm-roberta-base-sentiment`, pinned at
+revision `f2f1202b1bdeb07342385c3f807f9c07cd8f5cf8`, fp32, batch 16, truncation
+at 128 tokens, inputs length-sorted. Raw three-class probabilities are cached by
+SHA1 of the tweet text.
+
 ## Tests
 
 ```bash
@@ -207,31 +275,104 @@ leakage is ever introduced, that test fails.
   reported alongside.
 - **Grouped cross-validation by topic** — a topic never appears in both train
   and test folds.
-- **Ablation** across the full hierarchy: chance → ARIMA-only → engagement-only
-  → engagement+network → engagement+sentiment → full fusion.
-- **Significance**: bootstrap CIs, permutation tests, McNemar for paired
-  classifiers; effect sizes reported alongside p-values.
-- **Lead-time curve** — performance as a function of how far before peak the
-  cut-off sits. This is the evidence for H2.
-- **Robustness** — language control (a language-only classifier must *fail*),
-  sensitivity to window length, lead time and thresholds, and feature
-  importance checked against theory.
+- **Ablation** over 12 arms: chance, three single-channel arms, three
+  volume-plus-one-channel arms, a residualised structure arm, full fusion,
+  a regularised full fusion, and `volume_extended`.
+- **`volume_extended` is the baseline H1 must beat.** It is volume plus every
+  feature the size-proxy audit disqualified from the other channels — 33
+  features against full fusion's 31. Comparing fusion against the 3-feature
+  `volume_only` arm would make H1 pass for the wrong reason, because most of
+  what fusion adds over three features is re-encoded volume.
+- **Significance**: bootstrap CIs over out-of-fold predictions, exact McNemar
+  on paired out-of-fold decisions, Bonferroni correction where a family of
+  comparisons is tested; effect sizes reported alongside p-values.
+- **Lead-time curve** — performance against how far before peak the cut-off
+  sits, evaluated on a *nested* design: the same 52 topics at every lead, so
+  the lead effect is not confounded with sample composition. Evidence for H2.
+- **Robustness** — a language-only negative control (which **fails**; see
+  Results), sensitivity to window length, lead time and `min_window_tweets`,
+  and permutation feature importance checked against theory.
 - Seeds are set and recorded everywhere.
 
 ## Results
 
-*To be completed once the fusion model runs.*
+129 units — 42 trending, 87 non-trending. **Chance PR-AUC = prevalence =
+0.326**, not 0.5. Grouped 5-fold CV repeated 8 times, seed 42.
 
-| Model | PR-AUC | ROC-AUC | F1 |
-|---|---|---|---|
-| Chance | — | 0.50 | — |
-| Temporal only | | | |
-| Sentiment only | | | |
-| Network only | | | |
-| **Full fusion** | | | |
+| Arm | Features | PR-AUC | 95% CI | ROC-AUC | F1 |
+|---|---|---|---|---|---|
+| Chance | 0 | 0.326 | — | 0.500 | — |
+| Volume only | 3 | 0.649 | [0.509, 0.771] | 0.724 | 0.571 |
+| Sentiment only | 9 | 0.564 | [0.435, 0.745] | 0.783 | 0.617 |
+| Temporal only | 9 | 0.654 | [0.512, 0.789] | 0.764 | 0.622 |
+| Structure only (size-free) | 10 | 0.689 | [0.551, 0.804] | 0.730 | 0.561 |
+| Volume + structure | 13 | 0.829 | [0.719, 0.910] | 0.869 | 0.709 |
+| **Full fusion** | 31 | **0.853** | [0.756, 0.927] | 0.891 | 0.727 |
+| **`volume_extended`** (baseline) | 33 | 0.820 | [0.701, 0.912] | 0.889 | **0.780** |
 
-The validated prototype result for the network channel, and the correction
-applied to it, are recorded in [FINDINGS.md](FINDINGS.md).
+### H1 — not supported
+
+Full fusion beats `volume_only` (0.853 vs 0.649, McNemar p = 0.0059). It does
+**not** beat `volume_extended`: **0.853 vs 0.820, p = 0.6636**, and
+`volume_extended` has the higher F1 and recall. Most of fusion's apparent
+advantage over a three-feature baseline is volume re-encoded through other
+channels, which is why the audit and the extended baseline exist.
+
+### H2 — supported directionally, not statistically
+
+Nested sweep, the same 52 topics at every lead (prevalence 0.5 here, so chance
+PR-AUC is 0.5, **not** 0.326):
+
+| Lead | n | Volume only | Volume + structure | p (McNemar) |
+|---|---|---|---|---|
+| 30 min | 52 | 0.765 | 0.890 | 0.3877 |
+| 60 min | 52 | 0.795 | 0.888 | 0.2668 |
+| 120 min | 52 | 0.699 | 0.923 | 0.1185 |
+| 180 min | 52 | **0.515** | **0.764** | **0.0347** |
+
+Volume decays to near chance at a three-hour lead; structure holds. The p-trend
+is monotone (0.388 → 0.267 → 0.119 → 0.035), but the one significant cell
+does not survive Bonferroni correction across four leads (α = 0.0125). The
+claim is directional.
+
+### The language control fails — and this qualifies everything above
+
+The negative control was specified to fail. It does not.
+
+| Classifier | PR-AUC |
+|---|---|
+| Spanish-share alone | **0.897** |
+| Full fusion | 0.853 |
+
+**A single feature — what fraction of a topic's tweets are Spanish — outscores
+every model in this study.** The cause is collection, not modelling: the
+trending pool is multilingual while the non-trending pool is ~90% Spanish, so
+language separates the classes before any dynamics are measured.
+
+All three standard controls were attempted and all three are impossible on this
+corpus: topic-level language matching (no English negatives exist), tweet-level
+filtering (features recover language at ROC 0.735–0.812 anyway), and
+within-language restriction (the non-trending minimum Spanish share, 0.824,
+exceeds the trending 75th percentile, 0.814 — the distributions barely
+overlap). Restricting to the common-support band (n = 43) does not help:
+language alone scores 0.716 there against `volume_extended`'s 0.712.
+
+**What survives.** H2 is a within-topic contrast — the same 52 topics at every
+lead, so the confound is constant while the effect varies. That is a fortunate
+consequence of a design choice made for a different reason, not foresight. The
+H1 null also survives: a shared confound can manufacture a spurious *pass*, but
+it cannot manufacture a spurious *failure* to beat a baseline that carries the
+same confound. The size-proxy findings are internal to the feature matrix and
+are unaffected.
+
+Resampling noise is ±0.02–0.03 PR-AUC, so differences below ~0.05 carry no
+interpretation. With 42 positives this study is underpowered; a null here is
+weak evidence of no effect, and the reverse risk holds too.
+
+Full numbers: [`outputs/tables/RESULTS_SUMMARY.md`](outputs/tables/RESULTS_SUMMARY.md).
+Corrections, defects and limitations: [FINDINGS.md](FINDINGS.md). The frozen
+prototype result for the network channel, and the negative-pool leak corrected
+in it, are recorded there too.
 
 ## Honest reporting
 
