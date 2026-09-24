@@ -144,6 +144,21 @@ def main() -> int:
     print(f"  mean Spanish share — trending {mix.lang_es_frac[y == 1].mean():.3f}, "
           f"non-trending {mix.lang_es_frac[y == 0].mean():.3f}")
     out["A_language_only"] = a
+    # Saved, not only printed: the class overlap in Spanish share is the whole
+    # argument for why within-language restriction is impossible, and a number
+    # that only ever reaches a console cannot be checked against the report.
+    qs = [0.0, 0.25, 0.5, 0.75, 1.0]
+    out["spanish_share"] = {
+        "mean_trending": round(float(mix.lang_es_frac[y == 1].mean()), 4),
+        "mean_non_trending": round(float(mix.lang_es_frac[y == 0].mean()), 4),
+        "quantiles": {
+            lab: {
+                "trending": round(float(mix.lang_es_frac[y == 1].quantile(q)), 4),
+                "non_trending": round(float(mix.lang_es_frac[y == 0].quantile(q)), 4),
+            }
+            for lab, q in zip(("min", "p25", "p50", "p75", "max"), qs, strict=True)
+        },
+    }
 
     # ---- B: can the modelled features recover language? (MUST FAIL) ----
     print("\n" + "=" * 72)
