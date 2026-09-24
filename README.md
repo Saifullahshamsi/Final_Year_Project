@@ -166,6 +166,15 @@ previous one's cached output; nothing is hand-edited at any stage.
 ```bash
 .venv/Scripts/python -m src.eval.figures
 ```
+```bash
+.venv/Scripts/python -m src.eval.results_summary
+```
+
+`results_summary` must run last: it reads the JSONs every earlier step
+writes, and regenerates
+[`outputs/tables/RESULTS_SUMMARY.md`](outputs/tables/RESULTS_SUMMARY.md) from
+them. That file is **generated, never edited by hand** — which is what stops
+it drifting away from the run it describes.
 
 The sentiment step is the only slow one (~11 min on first run, ~30 s
 thereafter — it caches raw model probabilities by text hash). Everything else
