@@ -33,7 +33,7 @@ from collections import Counter, defaultdict
 
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
 
 from src.data.loading import (
     band_from_config,
@@ -106,11 +106,22 @@ def window_language_mix(cfg, band, units) -> pd.DataFrame:
     return pd.DataFrame(rows), top
 
 
-def cv_score(cfg, X, y, seed_offset=0):
-    cv = StratifiedKFold(n_splits=cfg["model"]["cv_folds"], shuffle=True,
-                         random_state=cfg["seed"] + seed_offset)
+def cv_score(cfg, X, y, groups, seed_offset=0):
+    """Score one feature block under the SAME protocol as the headline ablation.
+
+    `groups` is required, not optional. This function previously used plain
+    `StratifiedKFold`, so every control and robustness check ran an ungrouped
+    split while `src/eval/ablation.py` ran a grouped one. Groups are singletons
+    in this study — one unit per topic — so nothing leaked and the numbers
+    barely moved. It was still wrong: a headline and the checks that test it
+    have to run the same protocol, or the comparison between them means
+    nothing. Making the argument mandatory is deliberate; a default would let
+    the next caller silently drift back.
+    """
+    cv = StratifiedGroupKFold(n_splits=cfg["model"]["cv_folds"], shuffle=True,
+                              random_state=cfg["seed"] + seed_offset)
     with single_threaded(cfg):
-        p = cross_val_predict(build_estimator(cfg), X, y, cv=cv,
+        p = cross_val_predict(build_estimator(cfg), X, y, cv=cv, groups=groups,
                               method="predict_proba",
                               n_jobs=cfg["model"]["n_jobs"])[:, 1]
     lo, hi = bootstrap_ci(y, p, average_precision_score,
@@ -144,7 +155,8 @@ def main() -> int:
     print("A — LANGUAGE-ONLY CLASSIFIER (expected to succeed: measures the")
     print("    confound this pipeline exists to control)")
     print("=" * 72)
-    a, _ = cv_score(cfg, mix[lang_cols].values.astype(float), y)
+    a, _ = cv_score(cfg, mix[lang_cols].values.astype(float), y,
+                    mix["topic"].values)
     print(f"  features: {lang_cols}")
     print(f"  PR-AUC {a['pr_auc']:.3f} [{a['pr_auc_ci'][0]:.3f}, "
           f"{a['pr_auc_ci'][1]:.3f}]   ROC-AUC {a['roc_auc']:.3f}   "
@@ -178,7 +190,8 @@ def main() -> int:
     out["B_language_from_features"] = {}
     for arm in ARMS:
         cols = resolve(cfg, arm)
-        r, _ = cv_score(cfg, feats[cols].values.astype(float), es_major, 1)
+        r, _ = cv_score(cfg, feats[cols].values.astype(float), es_major,
+                        feats["topic"].values, 1)
         out["B_language_from_features"][arm] = r
         verdict = "LEAKS LANGUAGE" if r["roc_auc"] >= 0.70 else "ok"
         print(f"  {arm:<24} ROC-AUC {r['roc_auc']:.3f}  "
@@ -203,7 +216,8 @@ def main() -> int:
         out["C_monolingual_subset"]["arms"] = {}
         for arm in ARMS:
             cols = resolve(cfg, arm)
-            r, _ = cv_score(cfg, sub[cols].values.astype(float), ysub, 2)
+            r, _ = cv_score(cfg, sub[cols].values.astype(float), ysub,
+                            sub["topic"].values, 2)
             out["C_monolingual_subset"]["arms"][arm] = r
             print(f"  {arm:<24} PR-AUC {r['pr_auc']:.3f} "
                   f"[{r['pr_auc_ci'][0]:.3f}, {r['pr_auc_ci'][1]:.3f}]  "

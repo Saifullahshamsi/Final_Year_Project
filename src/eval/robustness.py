@@ -44,7 +44,7 @@ def run_arms(cfg, df, arms=ARMS, seed_offset=0):
     for arm in arms:
         cols = resolve(cfg, arm)
         out[arm], preds[arm] = cv_score(cfg, df[cols].values.astype(float), y,
-                                        seed_offset)
+                                        df["topic"].values, seed_offset)
     return out, preds, y
 
 
@@ -93,7 +93,8 @@ def main() -> int:
         print(f"\n  full_fusion vs volume_extended: McNemar p={m['p_value']:.4f} "
               f"({m['only_a_correct']}/{m['only_b_correct']} discordant)")
         # Does the language signal survive inside the overlap band?
-        lang_r, _ = cv_score(cfg, mix[keep][["lang_es_frac"]].values, ysub, 4)
+        lang_r, _ = cv_score(cfg, mix[keep][["lang_es_frac"]].values, ysub,
+                             mix[keep]["topic"].values, 4)
         print(f"  language-only inside the band: PR-AUC {lang_r['pr_auc']:.3f} "
               f"(chance {lang_r['chance_pr_auc']:.3f})")
         cs.update({"arms": res, "fusion_vs_volume_extended": m,
