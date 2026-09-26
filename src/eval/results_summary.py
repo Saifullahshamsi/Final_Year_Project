@@ -23,7 +23,7 @@ import pathlib
 
 import pandas as pd
 
-from src.data.loading import load_config
+from src.data.loading import load_config, utf8_console
 
 
 def _load(tables: str, name: str):
@@ -480,8 +480,13 @@ def section_features(cfg: dict, audit: dict, arima: dict) -> list[str]:
     return out
 
 
-def main() -> int:
-    cfg = load_config()
+def build(cfg: dict) -> str:
+    """Compose the whole summary as text.
+
+    Kept separate from main() so it can be exercised without writing over the
+    tracked RESULTS_SUMMARY.md. A test that has to overwrite a committed file
+    in order to check anything is a test nobody runs twice.
+    """
     t = cfg["paths"]["tables"]
     ab = _load(t, "ablation_results.json")
     lt = _load(t, "lead_time_results.json")
@@ -553,9 +558,16 @@ def main() -> int:
         + section_features(cfg, audit, arima)
     )
 
-    path = pathlib.Path(t) / "RESULTS_SUMMARY.md"
-    path.write_text("\n".join(head + body), encoding="utf-8")
-    print(f"wrote {path} ({len(head + body)} lines)")
+    return "\n".join(head + body)
+
+
+def main() -> int:
+    utf8_console()
+    cfg = load_config()
+    text = build(cfg)
+    path = pathlib.Path(cfg["paths"]["tables"]) / "RESULTS_SUMMARY.md"
+    path.write_text(text, encoding="utf-8")
+    print(f"wrote {path} ({len(text.splitlines())} lines)")
     return 0
 
 
