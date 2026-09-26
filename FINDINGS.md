@@ -17,8 +17,17 @@ Every number below traces to a script in this repository. Nothing is estimated.
 > `outputs/tables/RESULTS_SUMMARY.md`, which is now **generated** from the
 > result JSONs. The final entry in this file lists every number that moved.
 >
-> **H1 and H2 conclusions are unchanged.** H1 remains not supported; H2 remains
-> directional. Nothing in the argument below depends on the superseded values.
+> A **second** re-run followed on **2026-09-26**, when `cv_score` was corrected
+> from ungrouped to grouped cross-validation. That moved every number in the
+> language control, the common-support band and both sensitivity sweeps. The
+> nested lead-time sweep — all of H2's evidence — is identical under both.
+>
+> **H1 and H2 conclusions are unchanged by either re-run.** H1 remains not
+> supported; H2 remains directional; the language control still fails. Nothing
+> in the argument below depends on a superseded value. Two numbers that appear
+> repeatedly in older entries are now wrong and are corrected in the final
+> entries: language alone inside the common-support band is **0.642**, not
+> 0.716, and `volume_extended` there is **0.689**, not 0.712 or 0.811.
 
 ---
 
@@ -615,8 +624,10 @@ would have produced a *better-looking* result had it gone unnoticed.
 | 6 | sentiment texts collected for primary units only | 11 units in the 30-minute-window setting scored with **all-zero sentiment features** — silent bias in the arm under test; corrected p moved **0.824 → 0.359** | reading the sweep's own diagnostic line |
 | 7 | figure palette | 4 of 5 colour-vision checks failed; two series indistinguishable | running the CVD validator |
 | 8 | ARIMA order fixed at (1,1,1) by convention | an AR coefficient the data does not support, standing as the **top temporal feature** by permutation importance (+0.040) | external review asked for a justification; the selection then showed (1,1,1) wins on **0 of 129** units |
+| 9 | two evaluators disagreed on the same configuration | the primary setting reported **two different PR-AUC values** (0.8159 / 0.8286 and 0.8563 / 0.8591) depending on which script printed it | external review asked why one run appeared twice; tracing it found a 7e-15 float difference |
+| 10 | ungrouped CV in every robustness and control check | the headline and the checks that test it ran **different CV protocols**; no leakage (groups are singletons) but the comparison between them was not like-for-like | auditing the pair above |
 
-**Seven of the eight made results look better, not worse.** None was found by a
+**Seven of the ten made results look better, not worse.** Defects 9 and 10 made nothing look better or worse; they made two numbers that should have been one number, which is a different and in some ways more corrosive failure — a reader cannot tell which value to trust. None was found by a
 number looking wrong, because none of them made a number look wrong — that is
 the defining property of this class of defect. They were found by audits that
 ran regardless of whether anything seemed amiss: a per-feature size correlation,
@@ -1792,3 +1803,198 @@ proxy. It was an honest feature of a model whose specification nobody had
 tested. Different failure mode, different check required, and the check came
 from outside. That is an argument for external review as a distinct instrument
 rather than a backstop for the internal one.
+
+---
+
+## 2026-09-26 — One configuration, two numbers: a 7e-15 difference that moved PR-AUC by 0.013
+
+Review of the draft objected that the same run appeared as separate results,
+"especially when CI is the same but output for some reason is different."
+The objection was correct, and tracing it found two distinct problems sharing
+one symptom.
+
+### Three places the primary configuration appeared
+
+| where | source |
+|---|---|
+| §1 primary ablation | `ablation_results.json` |
+| §2 lead-time row `60 min` | `lead_time_results.json` — lead 60 + window 90 **is** the primary setting |
+| §6 row `15` and §7 row `90min` | `robustness.json` — 15 and 90 are each sweep's primary setting |
+
+§6 and §7 are bit-identical to each other: one run anchoring two sensitivity
+tables. That is now labelled as an anchor rather than presented as a third
+result. The other two needed explaining.
+
+### The mechanism, measured rather than assumed
+
+At lead 60 the ablation table and the lead-time table described the same 129
+units, and two of four arms agreed **exactly, to the last digit of the
+confidence interval**, while two did not:
+
+| arm | §1 ablation | §2 lead 60 |
+|---|---|---|
+| volume_only | 0.6495 | 0.6495 *(CI identical)* |
+| volume_extended | 0.8053 | 0.8053 *(CI identical)* |
+| volume_plus_structure | 0.8286 | **0.8159** |
+| full_fusion | 0.8563 | **0.8591** |
+
+Ruled out in turn: CV protocol, seed, estimator, residualisation, column order,
+row order, and non-determinism — re-running `lead_time` reproduced its own
+numbers byte-for-byte. A feature-by-feature comparison then found all 61
+columns equal to 1e-9 across all 129 units.
+
+The difference is that **`ablation` reads features from the cached CSVs while
+`lead_time` rebuilt them in memory**. Scoring the identical rebuilt matrix
+three ways isolates it:
+
+| feature source | volume_plus_structure | full_fusion |
+|---|---|---|
+| in memory (never written) | 0.8159 | 0.8591 |
+| after a CSV round-trip | **0.8286** | **0.8563** |
+| the cached CSV files | **0.8286** | **0.8563** |
+
+Maximum absolute difference between the in-memory and cached matrices:
+**7.11e-15**, in 2,500 of 7,869 cells.
+
+`HistGradientBoostingClassifier` bins each feature into 255 buckets before
+splitting. A value sitting exactly on a bin edge falls one side or the other
+depending on its last bit; one flipped assignment changes a split, and that
+change cascades through every later split in the tree. **A difference at the
+fifteenth decimal place moved PR-AUC by 0.013.**
+
+### A second noise floor, and not the sampling one
+
+The resampling noise already recorded is ±0.02–0.03 PR-AUC and is *statistical*
+— it comes from which units land in which fold. What is above is *numerical*,
+comes from float64 text serialisation, and is present even when the data, the
+folds, the seed and the model are all identical.
+
+The two are independent and they compound. The existing guidance — that
+differences below ~0.05 PR-AUC carry no interpretation — survives, but now for
+two reasons rather than one. Roughly 0.013 of that floor cannot be reduced by
+collecting more data, because it is not about data.
+
+**What it does not touch.** H1 rests on an exact McNemar test on paired
+decisions (10/10, p = 1.0000) and H2 on the nested sweep, whose numbers are
+identical under both paths. Neither conclusion moves. The finding is about the
+**resolution** of this study rather than its results — and it is a standing
+reason to distrust any PR-AUC comparison quoted to the third decimal place,
+including in published work.
+
+### What was changed, and what deliberately was not
+
+`lead_time` now round-trips its rebuilt features through CSV before scoring, so
+every evaluator sees values that have taken the identical numeric path and the
+primary configuration produces **one** number. Confirmed: the 60-minute row is
+now 0.649 / 0.805 / 0.829 / 0.856, matching the primary ablation exactly.
+
+The sensitivity itself is **not** fixed, because it is not a bug. Any pipeline
+that serialises float features and trains a histogram-based model has it.
+Matching the code paths without recording why would have been the real error.
+
+---
+
+## 2026-09-26 — The robustness checks were not running the headline's CV protocol
+
+Auditing the above found a second, unrelated inconsistency.
+`src/eval/ablation.py` used `StratifiedGroupKFold` grouped by topic. `cv_score`
+in `src/eval/language_control.py` — which `src/eval/robustness.py` also imports
+and uses for every check — used plain `StratifiedKFold`, **ungrouped**.
+
+No leakage resulted: groups are singletons in this study, one unit per topic,
+so grouped and ungrouped splits partition the same objects. But fold
+*assignment* differs, and a headline compared against checks run under a
+different protocol is not a like-for-like comparison. A marker would be right
+to ask, and the honest answer would have been that nobody noticed.
+
+`cv_score` now uses `StratifiedGroupKFold` and **requires** `groups` — no
+default, so the next caller cannot silently drift back.
+
+### What moved
+
+Less than expected in the conclusions and more than expected in the numbers,
+because a 43-unit or 71-unit subset is extremely sensitive to fold assignment.
+
+**Unchanged.** The entire nested lead-time sweep — every arm at every lead and
+every H2 p-value (0.3877 → 0.2668 → 0.1185 → 0.0347) — is identical to four
+decimal places. H2's evidence never ran through `cv_score`.
+
+**The language control still fails, by the same margin.** Spanish share alone
+scores PR-AUC **0.889** (was 0.897) against a chance rate of 0.326, and still
+beats every model in the study, `full_fusion` at 0.856 included.
+
+**Which arms leak language changed.** Predicting a window's language from the
+modelled features, at the ROC ≥ 0.70 threshold:
+
+| arm | before | after | verdict |
+|---|---|---|---|
+| full_fusion | 0.847 | 0.790 | leaks |
+| volume_extended | 0.767 | 0.761 | leaks |
+| volume_only | 0.735 | 0.749 | leaks |
+| temporal_only | 0.683 | 0.681 | ok |
+| structure_size_free | **0.747** | **0.677** | **now below threshold** |
+| sentiment_only | 0.683 | 0.508 | ok |
+
+The reported range moves from "0.735–0.812" to roughly 0.75–0.79 across the
+arms that still leak, and three arms leak rather than four. The substantive
+point is unchanged: the fused model recovers language better than any single
+channel does.
+
+**The common-support band moved most, and it is the smallest sample here.**
+On n = 43, chance 0.349:
+
+| arm | before | after |
+|---|---|---|
+| volume_only | 0.442 | 0.442 |
+| structure_size_free | 0.558 | 0.647 |
+| volume_extended | **0.811** | **0.689** |
+| full_fusion | 0.743 | 0.803 |
+| **Spanish share alone** | **0.716** | **0.642** |
+
+Language still scores far above the 0.349 chance rate inside the band built to
+neutralise it — a lift of +0.293 — so the finding stands: **restriction does
+not remove the confound**. But the *ordering* of the arms inside that band has
+now changed twice, once under the ARIMA correction and once here. That is the
+clearest available evidence that a 43-unit ranking should never have been
+leaned on, and the report should claim only what survives: the confound is
+present in the restricted sample, not which arm wins inside it.
+
+**Sensitivity p-values swung hard** — window=60min moved 0.2632 → 1.0000 and
+window=30min 0.7011 → 0.0963 — and every one remains non-significant. The
+conclusion "never significant against `volume_extended` at any setting" holds
+at every tested setting.
+
+### The lesson worth keeping
+
+Both defects in this entry surfaced because an outside reader asked why one
+number appeared twice. Neither would have been caught by the internal audits,
+which are aimed at features that track volume. The first check that would have
+caught either is one this project never had: **assert that two evaluators given
+the same configuration produce the same result.** That is a cheap invariant and
+a better use of a test than most of what is currently tested.
+
+---
+
+## 2026-09-26 — A config key that was never read, and the false claim it produced
+
+`config.yaml` carried `cv_repeats: 8` under `model:`. **Nothing in the pipeline
+ever read it.** Every evaluator runs `StratifiedGroupKFold(n_splits=5)` exactly
+once; there are no repeats anywhere.
+
+The key was inherited from the prototype, where it is real:
+`prototype/prototype_eval.py` and `prototype/rerun/evaluate.py` both use
+`RepeatedStratifiedKFold(n_splits=5, n_repeats=8)`. So the sentence "5-fold
+cross-validation repeated 8 times" is **true of the prototype results and false
+of every pipeline result** — which is precisely the kind of claim that is easy
+to carry across a rewrite without noticing the scope changed underneath it.
+
+It had already propagated: the README's parameter table listed
+`cv_folds / cv_repeats | 5 / 8` as though both were in force. The key is
+removed, the README corrected, and a comment left at the deletion site
+explaining why it is not coming back.
+
+The general point is worth more than the instance. **An unread configuration
+key is not inert.** It is a documented, authoritative-looking claim about what
+the code does, sitting in the one file a reader consults to find out what the
+code does. It is read by humans even when it is not read by the program, and
+nothing in a test suite or a linter will ever flag it.

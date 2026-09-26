@@ -224,7 +224,7 @@ Every data and evaluation parameter lives in [`config.yaml`](config.yaml).
 | `volume_proxy` | `window_tweets` | the declared volume proxy |
 | `arima.order` | `[0, 1, 2]` | **selected, not assumed** — see below |
 | `seed` | 42 | every stochastic component |
-| `cv_folds` / `cv_repeats` | 5 / 8 | grouped stratified CV |
+| `cv_folds` | 5 | `StratifiedGroupKFold`, run **once** — there are no repeats |
 | `n_bootstrap` | 1000 | bootstrap resamples for CIs |
 | `n_permutations` | 100 | permutation test / importance |
 
@@ -383,15 +383,17 @@ language separates the classes before any dynamics are measured.
 
 All three standard controls were attempted and all three are impossible on this
 corpus: topic-level language matching (no English negatives exist), tweet-level
-filtering (features recover language at ROC 0.735–0.812 anyway), and
+filtering (the strongest arms still recover language at ROC 0.75–0.79), and
 within-language restriction (the non-trending minimum Spanish share, 0.824,
 exceeds the trending 75th percentile, 0.814 — the distributions barely
 overlap). Restricting to the common-support band does not neutralise it
-either: with n = 43 and chance at 0.349, language alone still scores 0.716
-there — a lift of +0.367 over chance inside the region built to remove it.
-`volume_extended` scores 0.811 in the same band, so language does not *lead*
-there; but 43 units cannot separate 0.716 from 0.811, and the confound is
-plainly still present in the restricted sample.
+either: with n = 43 and chance at 0.349, language alone still scores 0.642
+there — a lift of +0.293 over chance inside the region built to remove it,
+against `volume_extended`'s 0.689 on the same 43 units. Nothing at that sample
+size separates those two, and the arm ordering inside the band has already
+moved once under a protocol correction, which is itself the reason not to lean
+on it. The finding is that the confound **survives the restriction**, not which
+arm leads inside it.
 
 **What survives.** H2 is a within-topic contrast — the same 52 topics at every
 lead, so the confound is constant while the effect varies. That is a fortunate

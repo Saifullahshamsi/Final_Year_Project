@@ -355,8 +355,14 @@ network:
   louvain_resolution: 1.0
 
 model:
-  n_jobs: 1                       # 1 core assumed; -1 caused thrashing
+  n_jobs: 1                       # determinism, not hardware — see CLAUDE.md
   cv_folds: 5
-  cv_repeats: 8
+  # NO cv_repeats. A `cv_repeats: 8` key used to sit here, inherited from the
+  # prototype (which genuinely uses RepeatedStratifiedKFold with 8 repeats).
+  # Nothing in this pipeline ever read it: every evaluator runs
+  # StratifiedGroupKFold(n_splits=5) exactly once. It was removed because a
+  # config key that looks authoritative and is never read is how a false
+  # methodology claim gets written down — "5-fold CV repeated 8 times" had
+  # already reached the README from this line.
   n_permutations: 100
   n_bootstrap: 1000
