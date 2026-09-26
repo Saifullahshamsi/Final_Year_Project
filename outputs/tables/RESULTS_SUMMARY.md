@@ -86,30 +86,34 @@ Lift over chance:
 
 | lead | volume_only | volume_extended | volume_plus_structure | full_fusion |
 |---|---|---|---|---|
-| 30 min | 0.765 | 0.883 | 0.890 | 0.810 |
-| 60 min | 0.795 | 0.918 | 0.888 | 0.889 |
-| 120 min | 0.699 | 0.843 | 0.923 | 0.826 |
-| 180 min | 0.515 | 0.702 | 0.764 | 0.669 |
+| 30 min | 0.765 | 0.883 | 0.892 | 0.810 |
+| 60 min | 0.795 | 0.918 | 0.890 | 0.887 |
+| 120 min | 0.699 | 0.843 | 0.925 | 0.826 |
+| 180 min | 0.515 | 0.702 | 0.765 | 0.669 |
 
 Lift over chance (0.500):
 
 | lead | volume_only | volume_extended | volume_plus_structure | full_fusion |
 |---|---|---|---|---|
-| 30 | +0.265 | +0.383 | +0.390 | +0.310 |
-| 60 | +0.295 | +0.418 | +0.388 | +0.389 |
-| 120 | +0.199 | +0.343 | +0.423 | +0.326 |
-| 180 | +0.015 | +0.202 | +0.264 | +0.169 |
+| 30 | +0.265 | +0.383 | +0.392 | +0.310 |
+| 60 | +0.295 | +0.418 | +0.390 | +0.387 |
+| 120 | +0.199 | +0.343 | +0.425 | +0.326 |
+| 180 | +0.015 | +0.202 | +0.265 | +0.169 |
 
 ### H2 significance (exact McNemar, common subset)
 
 | lead | volume_only vs volume+structure | discordant | volume_only vs full_fusion | discordant |
 |---|---|---|---|---|
-| 30 min | p = 0.3877 | 4 / 8 | p = 0.5078 | 3 / 6 |
-| 60 min | p = 0.2668 | 4 / 9 | p = 0.0386 | 2 / 10 |
+| 30 min | p = 0.1094 | 2 / 8 | p = 0.5078 | 3 / 6 |
+| 60 min | p = 0.2668 | 4 / 9 | p = 0.0923 | 3 / 10 |
 | 120 min | p = 0.1185 | 4 / 11 | p = 0.8145 | 8 / 10 |
-| 180 min | **p = 0.0347** | 6 / 17 | p = 0.1686 | 9 / 17 |
+| 180 min | **p = 0.0169** | 5 / 17 | p = 0.1686 | 9 / 17 |
 
-**H2 supported directionally, not statistically.** 4 tests; Bonferroni α = 0.0125; the trend is 0.3877 → 0.2668 → 0.1185 → 0.0347, and the smallest p does not survive correction. The monotone trend is the evidence, not the single cell. The effect belongs to `volume_plus_structure`, **not** to `full_fusion` — sentiment and temporal dilute.
+**H2 supported directionally, not statistically.** 4 tests; Bonferroni α = 0.0125; the p-values run 0.1094 → 0.2668 → 0.1185 → 0.0169, and the smallest does not survive correction.
+
+**The effect sizes are the evidence, not the p-values.** Volume alone decays toward chance as the lead grows while volume plus structure holds; that gap is stable to the third decimal across every correction this pipeline has been through. The p-values are not. They come from McNemar on a 52-unit subset, where a single flipped out-of-fold decision halves or doubles one — at the 180-minute lead, one unit moving between the discordant cells took p from 0.0347 to 0.0169 (FINDINGS, defect 9). Quote the curve, and quote the p-values only with that caveat attached.
+
+The effect belongs to `volume_plus_structure`, **not** to `full_fusion` — sentiment and temporal dilute it.
 
 ---
 
@@ -162,21 +166,21 @@ It is **not** the same run as §1, and is not expected to match it. Both sensiti
 
 | setting | n | pos | neg | chance | volume_only | structure_size_free | volume_extended | full_fusion | fusion vs vol_ext |
 |---|---|---|---|---|---|---|---|---|---|
-| 15 *(primary — shared anchor, see note above §6)* | 129 | 42 | 87 | 0.326 | 0.616 | 0.643 | 0.794 | 0.858 | p = 0.5034 |
-| 20 | 102 | 39 | 63 | 0.382 | 0.653 | 0.716 | 0.830 | 0.900 | p = 0.8238 |
-| 25 | 79 | 37 | 42 | 0.468 | 0.726 | 0.798 | 0.840 | 0.882 | p = 0.5413 |
+| 15 *(primary — shared anchor, see note above §6)* | 129 | 42 | 87 | 0.326 | 0.616 | 0.624 | 0.794 | 0.858 | p = 0.3593 |
+| 20 | 102 | 39 | 63 | 0.382 | 0.653 | 0.705 | 0.830 | 0.903 | p = 0.8238 |
+| 25 | 79 | 37 | 42 | 0.468 | 0.726 | 0.805 | 0.840 | 0.886 | p = 0.5413 |
 
-full_fusion lift over chance: +0.532, +0.517, +0.414. Raw PR-AUC rises with the threshold only because prevalence does.
+full_fusion lift over chance: +0.532, +0.520, +0.418. Raw PR-AUC rises with the threshold only because prevalence does.
 
 ## 7. Sensitivity — window length (drives graph sparsity)
 
 | setting | n | pos | neg | chance | volume_only | structure_size_free | volume_extended | full_fusion | fusion vs vol_ext |
 |---|---|---|---|---|---|---|---|---|---|
-| 30min | 71 | 37 | 34 | 0.521 | 0.673 | 0.676 | 0.787 | 0.825 | p = 0.0963 |
-| 60min | 107 | 41 | 66 | 0.383 | 0.591 | 0.716 | 0.730 | 0.739 | p = 1.0000 |
-| 90min *(primary — shared anchor, see note above §6)* | 129 | 42 | 87 | 0.326 | 0.616 | 0.643 | 0.794 | 0.858 | p = 0.5034 |
+| 30min | 71 | 37 | 34 | 0.521 | 0.673 | 0.684 | 0.792 | 0.821 | p = 0.1435 |
+| 60min | 107 | 41 | 66 | 0.383 | 0.591 | 0.712 | 0.735 | 0.742 | p = 0.5716 |
+| 90min *(primary — shared anchor, see note above §6)* | 129 | 42 | 87 | 0.326 | 0.616 | 0.624 | 0.794 | 0.858 | p = 0.3593 |
 
-full_fusion lift over chance: +0.303, +0.356, +0.532. **Never significant against volume_extended at any setting** — neither tuned parameter produced the null.
+full_fusion lift over chance: +0.300, +0.359, +0.532. **Never significant against volume_extended at any setting** — neither tuned parameter produced the null.
 
 ---
 

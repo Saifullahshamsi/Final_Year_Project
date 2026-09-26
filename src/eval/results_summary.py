@@ -194,11 +194,21 @@ def section_lead_nested(lt: dict) -> list[str]:
     out += [
         "",
         f"**H2 supported directionally, not statistically.** "
-        f"{len(lt['leads'])} tests; Bonferroni α = {alpha:.4f}; the trend is "
-        f"{trend}, and the smallest p does not survive correction. The "
-        "monotone trend is the evidence, not the single cell. The effect "
-        "belongs to `volume_plus_structure`, **not** to `full_fusion` — "
-        "sentiment and temporal dilute.",
+        f"{len(lt['leads'])} tests; Bonferroni α = {alpha:.4f}; the p-values "
+        f"run {trend}, and the smallest does not survive correction.",
+        "",
+        "**The effect sizes are the evidence, not the p-values.** Volume "
+        "alone decays toward chance as the lead grows while volume plus "
+        "structure holds; that gap is stable to the third decimal across "
+        "every correction this pipeline has been through. The p-values are "
+        "not. They come from McNemar on a 52-unit subset, where a single "
+        "flipped out-of-fold decision halves or doubles one — at the "
+        "180-minute lead, one unit moving between the discordant cells took "
+        "p from 0.0347 to 0.0169 (FINDINGS, defect 9). Quote the curve, and "
+        "quote the p-values only with that caveat attached.",
+        "",
+        "The effect belongs to `volume_plus_structure`, **not** to "
+        "`full_fusion` — sentiment and temporal dilute it.",
         "",
     ]
     return out

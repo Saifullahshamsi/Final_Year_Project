@@ -357,15 +357,24 @@ PR-AUC is 0.5, **not** 0.326):
 
 | Lead | n | Volume only | Volume + structure | p (McNemar) |
 |---|---|---|---|---|
-| 30 min | 52 | 0.765 | 0.890 | 0.3877 |
-| 60 min | 52 | 0.795 | 0.888 | 0.2668 |
-| 120 min | 52 | 0.699 | 0.923 | 0.1185 |
-| 180 min | 52 | **0.515** | **0.764** | **0.0347** |
+| 30 min | 52 | 0.765 | 0.892 | 0.1094 |
+| 60 min | 52 | 0.795 | 0.890 | 0.2668 |
+| 120 min | 52 | 0.699 | 0.925 | 0.1185 |
+| 180 min | 52 | **0.515** | **0.765** | **0.0169** |
 
-Volume decays to near chance at a three-hour lead; structure holds. The p-trend
-is monotone (0.388 → 0.267 → 0.119 → 0.035), but the one significant cell
-does not survive Bonferroni correction across four leads (α = 0.0125). The
-claim is directional.
+Volume decays to near chance at a three-hour lead; structure holds. The
+smallest p does not survive Bonferroni correction across four leads
+(α = 0.0125), so the claim is **directional**.
+
+**Read the effect sizes, not the p-values.** The gap between the two arms is
+stable to the third decimal across every correction this pipeline has been
+through. The p-values are not: they come from McNemar on 52 units, where one
+flipped out-of-fold decision moves a p-value by a factor of two. At the
+180-minute lead a 7e-15 change in the feature values took the discordant split
+from 6/17 to 5/17 and the p-value from 0.0347 to 0.0169 — see
+[FINDINGS.md](FINDINGS.md), defect 9. An earlier version of this table reported
+a monotone p-trend; that monotonicity did not survive, and it was never the
+evidence.
 
 ### The language control fails — and this qualifies everything above
 

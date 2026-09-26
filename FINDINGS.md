@@ -1915,9 +1915,11 @@ default, so the next caller cannot silently drift back.
 Less than expected in the conclusions and more than expected in the numbers,
 because a 43-unit or 71-unit subset is extremely sensitive to fold assignment.
 
-**Unchanged.** The entire nested lead-time sweep — every arm at every lead and
-every H2 p-value (0.3877 → 0.2668 → 0.1185 → 0.0347) — is identical to four
-decimal places. H2's evidence never ran through `cv_score`.
+**Unchanged by *this* fix.** The entire nested lead-time sweep — every arm
+at every lead and every H2 p-value — is identical to four decimal places,
+because that evidence never ran through `cv_score`. **The p-values quoted
+here are superseded**: a later fix the same day round-tripped the nested
+block as well, and moved them. See the final entry in this file.
 
 **The language control still fails, by the same margin.** Spanish share alone
 scores PR-AUC **0.889** (was 0.897) against a chance rate of 0.326, and still
@@ -1998,3 +2000,119 @@ key is not inert.** It is a documented, authoritative-looking claim about what
 the code does, sitting in the one file a reader consults to find out what the
 code does. It is read by humans even when it is not read by the program, and
 nothing in a test suite or a linter will ever flag it.
+
+---
+
+## 2026-09-26 — One rebuild implementation, and what it cost to find out H2's p-values are fragile
+
+Two entries above record fixing the numeric path in `lead_time` and the CV
+protocol in `cv_score`. Both fixes were partial, and completing them changed
+something that matters.
+
+### The rebuild loop existed three times
+
+`src/eval/matrix.py` opens by saying the lead-time sweep and the robustness
+checks share one feature-matrix builder, "so a change to how features are
+assembled cannot silently apply to one analysis and not the other." That was
+aspiration, not fact. `robustness` used `build_feature_matrix`; `lead_time`
+carried its own copy of the identical loop **twice** — once for the per-lead
+matrices and once for the nested subset.
+
+The earlier round-trip fix was applied to one of those three sites. The nested
+block — which produces every number H2 rests on — was still building features
+in memory.
+
+All three now call `build_feature_matrix`, and the round-trip lives inside it,
+so every rebuild path leaves on the same numeric footing by construction rather
+than by three people remembering.
+
+### What that changed, and the correction it forces
+
+The entry above states that the nested sweep was "identical to four decimal
+places" under the CV fix. That was true of the CV fix. It is **not** true once
+the nested block also round-trips, and the sentence should be read as scoped to
+that change only.
+
+| lead | vol+str before | after | p before | p after | discordant |
+|---|---|---|---|---|---|
+| 30 min | 0.8898 | 0.8922 | 0.3877 | **0.1094** | 4/8 → 2/8 |
+| 60 min | 0.8884 | 0.8903 | 0.2668 | 0.2668 | 4/9 |
+| 120 min | 0.9227 | 0.9253 | 0.1185 | 0.1185 | 4/11 |
+| 180 min | 0.7639 | 0.7650 | **0.0347** | **0.0169** | 6/17 → 5/17 |
+
+`volume_only` is unchanged at every lead. The effect sizes move by at most
+0.0026. **The p-values move by up to a factor of 3.5.**
+
+### Why the p-values are the fragile part
+
+McNemar's exact test is a function of two integers: how often A is right and B
+wrong, and the reverse. On a 52-unit subset those counts are small — 6 and 17
+at the 180-minute lead — so a **single** out-of-fold decision changing side
+moves the p-value discontinuously. At 180 minutes exactly one unit moved, 6/17
+to 5/17, and p went from 0.0347 to 0.0169. At 30 minutes two moved and p fell
+by a factor of 3.5.
+
+The cause of those flips is the 7e-15 feature difference recorded as defect 9.
+A number far below any meaningful precision does not perturb the effect size at
+all — it perturbs which side of a threshold one prediction lands on, and the
+test statistic is built from exactly those crossings.
+
+This is worth stating as a general point rather than a local one: **effect
+sizes and p-values in this study have very different stabilities.** The PR-AUC
+gap between `volume_only` and `volume_plus_structure` has survived the ARIMA
+order change, the CV protocol change and the precision change, moving in the
+third decimal. The p-values attached to that same gap have moved by factors of
+two and three under changes that did not move the effect at all.
+
+### H2 stands, and its wording has to change
+
+The conclusion is unaffected: the smallest p-value is now **0.0169**, still
+above the Bonferroni threshold of 0.0125 across four leads, so H2 remains
+supported directionally and not statistically. The effect — volume decaying to
+0.515 while volume-plus-structure holds 0.765 — is unchanged.
+
+What does not survive is the *argument* previously used to support it. Earlier
+write-ups leaned on a **monotone p-trend** (0.3877 → 0.2668 → 0.1185 →
+0.0347) as evidence that the effect was real even though no single cell passed
+correction. That monotonicity is gone: the sequence now runs 0.1094 → 0.2668 →
+0.1185 → 0.0169. It was an artefact of which side of a boundary two predictions
+happened to fall on, and it should never have been load-bearing.
+
+The evidence for H2 is the **effect-size curve**, which is stable. The README
+and the generated summary now say that, and say plainly that the earlier
+monotone claim did not survive. Removing an argument that turned out to be
+noise is not a weakening of the result; keeping it would have been a
+misstatement of what the data supports.
+
+### What the robustness sweeps did
+
+Unchanged where they read cached features: the common-support band is identical
+(language alone 0.642, `volume_extended` 0.689, n = 43). The parameter sweeps
+moved modestly — `structure_size_free` at the primary setting 0.643 → 0.624,
+others by less — and every `fusion vs volume_extended` p-value remains
+non-significant, the largest moving 1.0000 → 0.5716 and the smallest 0.0963 →
+0.1435. The conclusion "never significant at any tested setting" holds.
+
+### The invariant that would have caught all of this
+
+`tests/test_evaluator_agreement.py` now asserts what nobody was asserting:
+**two evaluators given the same configuration produce the same result.**
+
+Thirteen tests, no corpus needed, eight seconds. `ablation`, `lead_time.evaluate`
+and `cv_score` must return *identical* out-of-fold predictions on the same
+synthetic matrix; `cv_score` must refuse to run without `groups`; and the
+round-trip must be idempotent, so a matrix that has been through it once is on
+the cached footing and a second pass cannot move a score.
+
+The test was checked against the old code before being trusted: reproducing the
+previous ungrouped `StratifiedKFold` on the same inputs gives different
+predictions and a PR-AUC of 0.9319 against 0.9167. It would have failed on the
+day the ungrouped split was introduced, which is the only sense in which a
+regression test is worth anything.
+
+One test deliberately documents rather than guards. It perturbs every feature
+by one part in 1e15 and asserts only that no prediction inverts outright —
+recording that the sensitivity is real and is **not** claimed to be fixed.
+Matching the code paths removed the *inconsistency*, not the underlying
+instability, and a test that pretended otherwise would be the same kind of
+false reassurance as the config key that nothing read.

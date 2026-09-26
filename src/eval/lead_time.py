@@ -19,7 +19,6 @@ Run:  python -m src.eval.lead_time
 """
 from __future__ import annotations
 
-import io
 import json
 import time
 
@@ -30,41 +29,14 @@ from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
 from src.data.loading import band_from_config, load_config, utf8_console
 from src.data.units import build_units, scan_nontrending, scan_trending
 from src.eval.ablation import bootstrap_ci, mcnemar
+from src.eval.matrix import build_feature_matrix
 from src.features.feature_sets import resolve
-from src.features.network import collect_window_tweets, features_for_unit
-from src.features.sentiment import aggregate, collect_texts, lead_sweep_bins, load_cache
-from src.features.temporal import features_for_unit as temporal_features
+from src.features.sentiment import collect_texts, lead_sweep_bins, load_cache
 from src.models.fusion import build_estimator, single_threaded
 
 # Kept deliberately small: H2 is about volume versus fusion as the lead grows,
 # and every extra arm costs sample-size-limited statistical clarity.
 ARMS = ["volume_only", "volume_extended", "volume_plus_structure", "full_fusion"]
-
-
-def _match_cached_precision(df: pd.DataFrame) -> pd.DataFrame:
-    """Send the rebuilt features through the same CSV round-trip the cached
-    ones took.
-
-    This sweep recomputes every feature per lead instead of reading the cached
-    matrices, so its float64 values never pass through text. `ablation.py`
-    reads the cached CSVs, where every value has been written and re-parsed.
-    The two differ by at most ~7e-15 per cell — and that is enough:
-    HistGradientBoosting bins each feature into 255 buckets, a value sitting on
-    a bin edge can fall either side, and one flipped split cascades. Measured,
-    at the shared 60-minute lead, it moved PR-AUC by up to 0.013 and made the
-    primary configuration report two different numbers depending on which
-    script printed it.
-
-    Round-tripping here costs a fraction of a second per lead and makes the
-    numeric path identical, so the primary configuration has one value. It does
-    NOT make the underlying sensitivity go away — that is recorded in
-    FINDINGS.md, because a result that moves by 0.013 on the last bit of a
-    float is a fact about this study's resolution, not a bug to paper over.
-    """
-    buf = io.StringIO()
-    df.to_csv(buf, index=False)
-    buf.seek(0)
-    return pd.read_csv(buf)
 
 
 def evaluate(cfg, df, arm):
@@ -136,19 +108,11 @@ def main() -> int:
                              "n_negative": n_neg, "modelled": False}
             continue
 
-        recs = collect_window_tweets(cfg, band, units)
-        rows = []
-        for r in units.itertuples():
-            net = features_for_unit(r, recs.get(r.topic, []), cfg)
-            tem = temporal_features(r, series[r.topic])
-            sent = aggregate([(b, k) for b, k in sent_per_topic.get(r.topic, [])
-                              if r.window_start_bin <= b < r.window_end_bin],
-                             cache, cfg)
-            net.update({k: v for k, v in tem.items()
-                        if k not in ("topic", "label")})
-            net.update(sent)
-            rows.append(net)
-        df = _match_cached_precision(pd.DataFrame(rows))
+        # One rebuild implementation, shared with the robustness sweeps, so the
+        # two analyses cannot drift onto different feature values or a
+        # different numeric path. This loop used to be duplicated here.
+        df = build_feature_matrix(cfg, band, units, series, sent_per_topic,
+                                  cache)
 
         preds, arm_res = {}, {}
         for arm in ARMS:
@@ -251,18 +215,8 @@ def main() -> int:
             if n_pos < 12 or len(units) - n_pos < 12:
                 print(f"  lead {ld}: too few per class in the common subset")
                 continue
-            recs = collect_window_tweets(cfg, band, units)
-            rows = []
-            for r in units.itertuples():
-                net = features_for_unit(r, recs.get(r.topic, []), cfg)
-                tem = temporal_features(r, series[r.topic])
-                net.update({k: v for k, v in tem.items()
-                            if k not in ("topic", "label")})
-                net.update(aggregate(
-                    [(b, k) for b, k in sent_per_topic.get(r.topic, [])
-                     if r.window_start_bin <= b < r.window_end_bin], cache, cfg))
-                rows.append(net)
-            d = pd.DataFrame(rows)
+            d = build_feature_matrix(cfg, band, units, series, sent_per_topic,
+                                     cache)
             prev = float(d.label.mean())
             res, pred = {}, {}
             for a in ARMS:
