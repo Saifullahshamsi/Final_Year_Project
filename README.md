@@ -322,18 +322,19 @@ leakage is ever introduced, that test fails.
 ## Results
 
 129 units — 42 trending, 87 non-trending. **Chance PR-AUC = prevalence =
-0.326**, not 0.5. Grouped 5-fold CV repeated 8 times, seed 42.
+0.326**, not 0.5. Grouped 5-fold CV, seed 42.
 
-| Arm | Features | PR-AUC | 95% CI | ROC-AUC | F1 |
-|---|---|---|---|---|---|
-| Chance | 0 | 0.326 | — | 0.500 | — |
-| Volume only | 3 | 0.649 | [0.509, 0.771] | 0.724 | 0.571 |
-| Sentiment only | 9 | 0.564 | [0.435, 0.745] | 0.783 | 0.617 |
-| Temporal only | 9 | 0.565 | [0.419, 0.714] | 0.692 | 0.571 |
-| Structure only (size-free) | 10 | 0.689 | [0.551, 0.804] | 0.730 | 0.561 |
-| Volume + structure | 13 | 0.829 | [0.719, 0.910] | 0.869 | 0.709 |
-| **Full fusion** | 31 | **0.856** | [0.760, 0.930] | 0.893 | 0.734 |
-| **`volume_extended`** (baseline) | 33 | 0.805 | [0.684, 0.894] | 0.873 | **0.747** |
+**Every number, in one generated table:**
+[`outputs/tables/RESULTS_SUMMARY.md`](outputs/tables/RESULTS_SUMMARY.md) — all
+12 ablation arms with confidence intervals, every McNemar comparison, the
+lead-time sweep, the language control and both sensitivity analyses.
+
+No results table is reproduced here on purpose. It would be a hand-maintained
+copy of a generated file, and the first re-run that moved a number would leave
+the two disagreeing with nothing to catch it — which is the failure this
+project has already been through once, and the reason the summary is generated
+at all. The headline conclusions follow; the numbers behind them live in one
+place.
 
 ### H1 — not supported
 
