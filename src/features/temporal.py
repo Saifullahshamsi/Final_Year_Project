@@ -31,7 +31,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from src.data.loading import band_from_config, load_config
+from src.data.loading import band_from_config, load_config, utf8_console
 from src.data.units import scan_nontrending, scan_trending
 
 EPS = 1e-9
@@ -204,6 +204,7 @@ def size_proxy_audit(df: pd.DataFrame, feats: list[str],
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

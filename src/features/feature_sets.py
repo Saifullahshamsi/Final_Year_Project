@@ -101,9 +101,10 @@ def describe(cfg: dict, df: pd.DataFrame | None = None) -> str:
 
 
 def main() -> int:
-    from src.data.loading import load_config
+    from src.data.loading import load_config, utf8_console
     from src.features.network import feature_columns
 
+    utf8_console()
     cfg = load_config()
     df = pd.read_csv(f"{cfg['paths']['cache']}/network_features.csv")
     cols = feature_columns(df)

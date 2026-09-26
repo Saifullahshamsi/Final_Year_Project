@@ -35,7 +35,14 @@ import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
-from src.data.loading import band_from_config, clean_topic, load_config, parse_hashtags, stream
+from src.data.loading import (
+    band_from_config,
+    clean_topic,
+    load_config,
+    parse_hashtags,
+    stream,
+    utf8_console,
+)
 from src.eval.ablation import bootstrap_ci
 from src.eval.size_audit import load_matrices
 from src.features.feature_sets import resolve
@@ -114,6 +121,7 @@ def cv_score(cfg, X, y, seed_offset=0):
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

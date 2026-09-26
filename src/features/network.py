@@ -45,6 +45,7 @@ from src.data.loading import (
     parse_hashtags,
     parse_screen_names,
     stream,
+    utf8_console,
 )
 
 # Features that describe the topic as a whole rather than its pre-peak window.
@@ -363,6 +364,7 @@ def feature_columns(df: pd.DataFrame) -> list[str]:
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

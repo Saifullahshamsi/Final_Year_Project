@@ -36,6 +36,7 @@ from src.data.loading import (
     load_config,
     parse_hashtags,
     stream,
+    utf8_console,
 )
 
 NEG, NEU, POS = 0, 1, 2
@@ -270,6 +271,7 @@ def vader_features(cfg: dict, band, units: pd.DataFrame) -> tuple[pd.DataFrame, 
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

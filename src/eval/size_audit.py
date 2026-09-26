@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-from src.data.loading import load_config
+from src.data.loading import load_config, utf8_console
 
 # Arms whose features are supposed to carry no volume signal.
 NON_VOLUME_SETS = ("structure_size_free", "sentiment", "temporal")
@@ -56,6 +56,7 @@ def audit(cfg: dict, df: pd.DataFrame) -> dict:
 
 
 def main() -> int:
+    utf8_console()
     cfg = load_config()
     thr = cfg["audit"]["size_proxy_spearman_threshold"]
     df = load_matrices(cfg)

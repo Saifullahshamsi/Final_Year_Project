@@ -26,7 +26,7 @@ import time
 
 import pandas as pd
 
-from src.data.loading import band_from_config, load_config
+from src.data.loading import band_from_config, load_config, utf8_console
 from src.data.units import build_units, scan_nontrending, scan_trending
 from src.eval.ablation import mcnemar
 from src.eval.language_control import cv_score, window_language_mix
@@ -49,6 +49,7 @@ def run_arms(cfg, df, arms=ARMS, seed_offset=0):
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

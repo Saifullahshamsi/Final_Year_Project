@@ -26,7 +26,7 @@ import pandas as pd
 from sklearn.metrics import average_precision_score, f1_score, roc_auc_score
 from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
 
-from src.data.loading import band_from_config, load_config
+from src.data.loading import band_from_config, load_config, utf8_console
 from src.data.units import build_units, scan_nontrending, scan_trending
 from src.eval.ablation import bootstrap_ci, mcnemar
 from src.features.feature_sets import resolve
@@ -61,6 +61,7 @@ def evaluate(cfg, df, arm):
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

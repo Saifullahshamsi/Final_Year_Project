@@ -35,7 +35,11 @@ from sklearn.model_selection import (  # noqa: E402
     train_test_split,
 )
 
-from src.data.loading import band_from_config, load_config  # noqa: E402
+from src.data.loading import (  # noqa: E402
+    band_from_config,
+    load_config,
+    utf8_console,
+)
 from src.eval.language_control import window_language_mix  # noqa: E402
 from src.eval.size_audit import load_matrices  # noqa: E402
 from src.features.feature_sets import resolve  # noqa: E402
@@ -310,6 +314,7 @@ def fig_importance(cfg, df, out):
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

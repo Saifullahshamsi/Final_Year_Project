@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import ast
 import re
+import sys
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
@@ -22,6 +23,38 @@ _NULLISH = ("", "[]", "nan", "None")
 def repo_root() -> Path:
     """Repo root, resolved from this file's location (src/data/loading.py)."""
     return Path(__file__).resolve().parents[2]
+
+
+def utf8_console() -> None:
+    """Make stdout and stderr UTF-8 so console output renders as written.
+
+    Windows consoles default to cp1252, which turns every em dash, arrow and
+    Greek letter this pipeline prints into a literal '?'. The text is correct
+    and the files on disk are fine; only the terminal rendering is wrong. It
+    still matters twice over: a run being demonstrated should not look broken,
+    and in an audit table a '?' where a rho was is genuinely ambiguous.
+
+    Two steps, because they fix different halves of the problem.
+    `reconfigure` changes how Python encodes what it writes;
+    `SetConsoleOutputCP` changes what the Windows console decodes. Doing only
+    the first still mojibakes on a legacy console.
+
+    Every failure path here is non-fatal by design: a redirected stream, a
+    stream with no `reconfigure`, or any non-Windows platform simply leaves
+    things as they were. Console encoding is never worth crashing a run over.
+    """
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        except Exception:  # noqa: BLE001 - cosmetic only; never fail a run
+            pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            pass
 
 
 def load_config(path: str | Path | None = None) -> dict:

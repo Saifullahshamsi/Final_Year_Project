@@ -33,7 +33,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from src.data.loading import band_from_config, load_config
+from src.data.loading import band_from_config, load_config, utf8_console
 from src.data.units import scan_nontrending, scan_trending
 
 MIN_HISTORY = 8
@@ -116,6 +116,7 @@ def fit_grid(histories: list[np.ndarray], orders: list[tuple]) -> dict:
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     band = band_from_config(cfg)

@@ -46,6 +46,7 @@ from src.data.loading import (
     load_config,
     parse_hashtags,
     stream,
+    utf8_console,
 )
 
 # Ordered drop reasons — also the order attrition is reported in.
@@ -407,6 +408,7 @@ def run_sweep(pos, neg, band, cfg):
 
 
 def main() -> int:
+    utf8_console()
     ap = argparse.ArgumentParser()
     ap.add_argument("--sweep", action="store_true",
                     help="print the parameter grid instead of writing units")

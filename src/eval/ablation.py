@@ -34,7 +34,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import StratifiedGroupKFold, cross_val_predict
 
-from src.data.loading import load_config
+from src.data.loading import load_config, utf8_console
 from src.eval.size_audit import load_matrices
 from src.features.feature_sets import resolve, validate
 from src.models.fusion import build_estimator, single_threaded
@@ -95,6 +95,7 @@ def mcnemar(y: np.ndarray, a: np.ndarray, b: np.ndarray) -> dict:
 
 
 def main() -> int:
+    utf8_console()
     t0 = time.time()
     cfg = load_config()
     df = load_matrices(cfg)
