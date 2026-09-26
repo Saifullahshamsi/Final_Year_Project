@@ -19,6 +19,7 @@ Run:  python -m src.eval.lead_time
 """
 from __future__ import annotations
 
+import io
 import json
 import time
 
@@ -38,6 +39,32 @@ from src.models.fusion import build_estimator, single_threaded
 # Kept deliberately small: H2 is about volume versus fusion as the lead grows,
 # and every extra arm costs sample-size-limited statistical clarity.
 ARMS = ["volume_only", "volume_extended", "volume_plus_structure", "full_fusion"]
+
+
+def _match_cached_precision(df: pd.DataFrame) -> pd.DataFrame:
+    """Send the rebuilt features through the same CSV round-trip the cached
+    ones took.
+
+    This sweep recomputes every feature per lead instead of reading the cached
+    matrices, so its float64 values never pass through text. `ablation.py`
+    reads the cached CSVs, where every value has been written and re-parsed.
+    The two differ by at most ~7e-15 per cell — and that is enough:
+    HistGradientBoosting bins each feature into 255 buckets, a value sitting on
+    a bin edge can fall either side, and one flipped split cascades. Measured,
+    at the shared 60-minute lead, it moved PR-AUC by up to 0.013 and made the
+    primary configuration report two different numbers depending on which
+    script printed it.
+
+    Round-tripping here costs a fraction of a second per lead and makes the
+    numeric path identical, so the primary configuration has one value. It does
+    NOT make the underlying sensitivity go away — that is recorded in
+    FINDINGS.md, because a result that moves by 0.013 on the last bit of a
+    float is a fact about this study's resolution, not a bug to paper over.
+    """
+    buf = io.StringIO()
+    df.to_csv(buf, index=False)
+    buf.seek(0)
+    return pd.read_csv(buf)
 
 
 def evaluate(cfg, df, arm):
@@ -121,7 +148,7 @@ def main() -> int:
                         if k not in ("topic", "label")})
             net.update(sent)
             rows.append(net)
-        df = pd.DataFrame(rows)
+        df = _match_cached_precision(pd.DataFrame(rows))
 
         preds, arm_res = {}, {}
         for arm in ARMS:

@@ -6,7 +6,7 @@ All figures are out-of-fold predictions under 5-fold stratified cross-validation
 
 **Read this first:** `chance PR-AUC = prevalence`, and prevalence differs between tables. A PR-AUC of 0.62 is well above chance at prevalence 0.279 and barely above it at 0.422. Never compare PR-AUC across tables without the chance line.
 
-**Second:** resampling noise is **±0.02–0.03 PR-AUC** on identical data (measured — see FINDINGS). Differences below ~0.05 carry no interpretation. Report the intervals, not the point estimates.
+**Second:** differences below ~0.05 PR-AUC carry no interpretation, and that floor has **two** independent components. Resampling noise is ±0.02–0.03 on identical data. On top of it sits a *numerical* floor: the same features, written to CSV and read back, differ by up to 7e-15 per cell, which is enough to move a value across a histogram bin edge in the gradient-boosted model and shift PR-AUC by up to 0.013 (FINDINGS, defect 9). Report the intervals, not the point estimates.
 
 **Third:** the language confound is **not controlled**. See `FINDINGS.md § The language confound is NOT fully controlled`. Absolute performance figures below are not attributable to trend dynamics alone.
 
@@ -63,18 +63,18 @@ Composition varies with the lead; prevalence varies with it too. Use lift.
 
 | lead | n | pos | neg | chance | volume_only | volume_extended | volume_plus_structure | full_fusion | fusion vs vol_ext |
 |---|---|---|---|---|---|---|---|---|---|
-| 30 min | 183 | 51 | 132 | 0.279 | 0.619 | 0.715 | 0.789 | 0.766 | p = 0.4421 |
-| 60 min | 129 | 42 | 87 | 0.326 | 0.649 | 0.805 | 0.816 | 0.859 | p = 1.0000 |
-| 120 min | 93 | 35 | 58 | 0.376 | 0.641 | 0.649 | 0.739 | 0.678 | p = 0.3593 |
-| 180 min | 64 | 27 | 37 | 0.422 | 0.611 | 0.585 | 0.676 | 0.645 | p = 0.5572 |
+| 30 min | 183 | 51 | 132 | 0.279 | 0.619 | 0.715 | 0.786 | 0.776 | p = 0.4244 |
+| 60 min | 129 | 42 | 87 | 0.326 | 0.649 | 0.805 | 0.829 | 0.856 | p = 1.0000 |
+| 120 min | 93 | 35 | 58 | 0.376 | 0.641 | 0.651 | 0.743 | 0.679 | p = 0.3593 |
+| 180 min | 64 | 27 | 37 | 0.422 | 0.611 | 0.585 | 0.675 | 0.645 | p = 0.5572 |
 
 Lift over chance:
 
 | lead | volume_only | volume_extended | volume_plus_structure | full_fusion |
 |---|---|---|---|---|
-| 30 | +0.341 | +0.437 | +0.510 | +0.487 |
-| 60 | +0.324 | +0.480 | +0.490 | +0.533 |
-| 120 | +0.265 | +0.273 | +0.363 | +0.301 |
+| 30 | +0.341 | +0.437 | +0.507 | +0.497 |
+| 60 | +0.324 | +0.480 | +0.503 | +0.531 |
+| 120 | +0.265 | +0.275 | +0.367 | +0.303 |
 | 180 | +0.189 | +0.163 | +0.254 | +0.223 |
 
 ---
@@ -117,9 +117,9 @@ Lift over chance (0.500):
 
 | test | result |
 |---|---|
-| **A** language-only classifier | PR-AUC **0.897** [0.824, 0.958], ROC 0.893, chance 0.326 |
+| **A** language-only classifier | PR-AUC **0.889** [0.814, 0.952], ROC 0.880, chance 0.326 |
 | mean Spanish share of window | trending **0.482**, non-trending **0.978** |
-| **B** predicting language *from features* (ROC-AUC) | full_fusion 0.847 · volume_extended 0.767 · structure_size_free 0.747 · volume_only 0.735 · temporal_only 0.683 · sentiment_only 0.683 |
+| **B** predicting language *from features* (ROC-AUC) | full_fusion 0.790 · volume_extended 0.761 · volume_only 0.749 · temporal_only 0.681 · structure_size_free 0.677 · sentiment_only 0.508 |
 | **C** within-language subset | **impossible** — at ≥90% Spanish: 6 trending vs 80 non-trending |
 
 Spanish share of window, by class:
@@ -142,37 +142,41 @@ The non-trending **minimum** (0.824) exceeds the trending **75th percentile** (0
 
 | arm | PR-AUC | 95% CI | lift |
 |---|---|---|---|
-| volume_only | 0.442 | [0.296, 0.681] | +0.093 |
-| structure_size_free | 0.558 | [0.332, 0.780] | +0.209 |
-| full_fusion | 0.743 | [0.535, 0.900] | +0.395 |
-| volume_extended | 0.811 | [0.598, 0.958] | +0.463 |
-| **Spanish share alone** | **0.716** | [0.481, 0.890] | **+0.367** |
+| volume_only | 0.442 | [0.296, 0.705] | +0.093 |
+| structure_size_free | 0.647 | [0.404, 0.876] | +0.298 |
+| volume_extended | 0.689 | [0.461, 0.916] | +0.340 |
+| full_fusion | 0.803 | [0.619, 0.944] | +0.454 |
+| **Spanish share alone** | **0.642** | [0.414, 0.834] | **+0.293** |
 
-full_fusion vs volume_extended: McNemar p = 0.5488 (4 / 7 discordant).
+full_fusion vs volume_extended: McNemar p = 0.7744 (5 / 7 discordant).
 
-**Language still scores 0.716 inside the band selected for common language support** — a lift of +0.367 over chance in the region built to neutralise it. Restriction does not remove the confound. At n = 43 nothing here separates one arm from another; the point is that the confound survives the restriction, not which arm leads inside it.
+**Language still scores 0.642 inside the band selected for common language support** — a lift of +0.293 over chance in the region built to neutralise it. Restriction does not remove the confound. At n = 43 nothing here separates one arm from another; the point is that the confound survives the restriction, not which arm leads inside it.
 
 ---
+
+**The row marked *primary* below and the one in §7 are the same run, not two results.** 15 and 90 are the settings the headline uses, so both sweeps pass through the same fit; the two rows are bit-identical, confidence intervals included. Counting them separately would double-count one fit.
+
+It is **not** the same run as §1, and is not expected to match it. Both sensitivity sweeps deliberately use a different cross-validation seed from the headline (`seed + 5`), so that a sensitivity result is not an artefact of one particular fold split. Reading across from §1 to here therefore compares two different partitions of the same 129 units: the arms move by up to 0.05, which is itself a useful measure of how much fold assignment alone is worth at this sample size.
 
 ## 6. Sensitivity — `min_window_tweets` (the tuned parameter)
 
 | setting | n | pos | neg | chance | volume_only | structure_size_free | volume_extended | full_fusion | fusion vs vol_ext |
 |---|---|---|---|---|---|---|---|---|---|
-| 15 *(primary)* | 129 | 42 | 87 | 0.326 | 0.621 | 0.671 | 0.786 | 0.851 | p = 0.3075 |
-| 20 | 102 | 39 | 63 | 0.382 | 0.672 | 0.603 | 0.824 | 0.885 | p = 0.5235 |
-| 25 | 79 | 37 | 42 | 0.468 | 0.746 | 0.802 | 0.833 | 0.905 | p = 0.5034 |
+| 15 *(primary — shared anchor, see note above §6)* | 129 | 42 | 87 | 0.326 | 0.616 | 0.643 | 0.794 | 0.858 | p = 0.5034 |
+| 20 | 102 | 39 | 63 | 0.382 | 0.653 | 0.716 | 0.830 | 0.900 | p = 0.8238 |
+| 25 | 79 | 37 | 42 | 0.468 | 0.726 | 0.798 | 0.840 | 0.882 | p = 0.5413 |
 
-full_fusion lift over chance: +0.525, +0.503, +0.437. Raw PR-AUC rises with the threshold only because prevalence does.
+full_fusion lift over chance: +0.532, +0.517, +0.414. Raw PR-AUC rises with the threshold only because prevalence does.
 
 ## 7. Sensitivity — window length (drives graph sparsity)
 
 | setting | n | pos | neg | chance | volume_only | structure_size_free | volume_extended | full_fusion | fusion vs vol_ext |
 |---|---|---|---|---|---|---|---|---|---|
-| 30min | 71 | 37 | 34 | 0.521 | 0.666 | 0.664 | 0.739 | 0.753 | p = 0.7011 |
-| 60min | 107 | 41 | 66 | 0.383 | 0.587 | 0.616 | 0.741 | 0.776 | p = 0.2632 |
-| 90min *(primary)* | 129 | 42 | 87 | 0.326 | 0.621 | 0.671 | 0.786 | 0.851 | p = 0.3075 |
+| 30min | 71 | 37 | 34 | 0.521 | 0.673 | 0.676 | 0.787 | 0.825 | p = 0.0963 |
+| 60min | 107 | 41 | 66 | 0.383 | 0.591 | 0.716 | 0.730 | 0.739 | p = 1.0000 |
+| 90min *(primary — shared anchor, see note above §6)* | 129 | 42 | 87 | 0.326 | 0.616 | 0.643 | 0.794 | 0.858 | p = 0.5034 |
 
-full_fusion lift over chance: +0.231, +0.393, +0.525. **Never significant against volume_extended at any setting** — neither tuned parameter produced the null.
+full_fusion lift over chance: +0.303, +0.356, +0.532. **Never significant against volume_extended at any setting** — neither tuned parameter produced the null.
 
 ---
 

@@ -299,7 +299,8 @@ def _sens_table(block: dict, title: str, primary: str, note: str) -> list[str]:
     lifts = []
     for key, r in block.items():
         setting = key.split("=")[-1]
-        mark = " *(primary)*" if setting == primary else ""
+        mark = (" *(primary — shared anchor, see note above §6)*"
+                if setting == primary else "")
         c = r["prevalence"]
         cells = [f3(r["arms"][a]["pr_auc"]) for a in arms]
         lifts.append(r["arms"]["full_fusion"]["pr_auc"] - c)
@@ -515,9 +516,14 @@ def build(cfg: dict) -> str:
         "prevalence 0.279 and barely above it at 0.422. Never compare PR-AUC "
         "across tables without the chance line.",
         "",
-        "**Second:** resampling noise is **±0.02–0.03 PR-AUC** on identical "
-        "data (measured — see FINDINGS). Differences below ~0.05 carry no "
-        "interpretation. Report the intervals, not the point estimates.",
+        "**Second:** differences below ~0.05 PR-AUC carry no interpretation, "
+        "and that floor has **two** independent components. Resampling noise "
+        "is ±0.02–0.03 on identical data. On top of it sits a *numerical* "
+        "floor: the same features, written to CSV and read back, differ by up "
+        "to 7e-15 per cell, which is enough to move a value across a "
+        "histogram bin edge in the gradient-boosted model and shift PR-AUC by "
+        "up to 0.013 (FINDINGS, defect 9). Report the intervals, not the "
+        "point estimates.",
         "",
         "**Third:** the language confound is **not controlled**. See "
         "`FINDINGS.md § The language confound is NOT fully controlled`. "
@@ -540,6 +546,20 @@ def build(cfg: dict) -> str:
         + section_lead_nested(lt) + ["---", ""]
         + section_language(lc) + ["---", ""]
         + section_common_support(rb) + ["---", ""]
+        + ["**The row marked *primary* below and the one in §7 are the same "
+           "run, not two results.** 15 and 90 are the settings the headline "
+           "uses, so both sweeps pass through the same fit; the two rows are "
+           "bit-identical, confidence intervals included. Counting them "
+           "separately would double-count one fit.",
+           "",
+           "It is **not** the same run as §1, and is not expected to match "
+           "it. Both sensitivity sweeps deliberately use a different "
+           "cross-validation seed from the headline (`seed + 5`), so that a "
+           "sensitivity result is not an artefact of one particular fold "
+           "split. Reading across from §1 to here therefore compares two "
+           "different partitions of the same 129 units: the arms move by up "
+           "to 0.05, which is itself a useful measure of how much fold "
+           "assignment alone is worth at this sample size.", ""]
         + _sens_table(
             rb["min_window_tweets"],
             "## 6. Sensitivity — `min_window_tweets` (the tuned parameter)",
