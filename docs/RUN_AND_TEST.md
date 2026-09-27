@@ -36,7 +36,7 @@ Start here. These need no corpus at all: every test builds its own synthetic dat
 .venv\Scripts\python -m pytest -q
 ```
 
-> Expect: 185 passed, 1 skipped, in about 5 seconds.
+> Expect: 214 passed, 1 skipped, in about 10 seconds.
 
 ```powershell
 .venv\Scripts\python -m ruff check .

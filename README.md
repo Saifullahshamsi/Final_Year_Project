@@ -67,7 +67,7 @@ is recorded in [FINDINGS.md](FINDINGS.md).
 | Fusion + ablation | done — 12 arms |
 | Lead-time sweep, robustness, figures | done |
 
-The pipeline is complete end to end. 182 tests pass, lint is clean, and every
+The pipeline is complete end to end. 214 tests pass, lint is clean, and every
 number below traces to a script in this repository.
 
 ## Setup

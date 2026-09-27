@@ -40,7 +40,7 @@ DOC = [
     ("p", "Start here. These need no corpus at all: every test builds its own "
           "synthetic data in code. If these pass, the code is sound."),
     ("cmd", ".venv\\Scripts\\python -m pytest -q"),
-    ("note", "Expect: 185 passed, 1 skipped, in about 5 seconds."),
+    ("note", "Expect: 214 passed, 1 skipped, in about 10 seconds."),
     ("cmd", ".venv\\Scripts\\python -m ruff check ."),
     ("note", "Expect: All checks passed!"),
     ("p", "More detail when something fails:"),
