@@ -355,7 +355,7 @@ network:
   louvain_resolution: 1.0
 
 model:
-  n_jobs: 1                       # determinism, not hardware — see CLAUDE.md
+  n_jobs: 1                       # determinism, not hardware — see FINDINGS.md
   cv_folds: 5
   # NO cv_repeats. A `cv_repeats: 8` key used to sit here, inherited from the
   # prototype (which genuinely uses RepeatedStratifiedKFold with 8 repeats).

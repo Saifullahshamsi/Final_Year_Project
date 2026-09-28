@@ -1102,8 +1102,8 @@ than the citation alone.
 
 ## 2026-08-13 — A determinism guarantee that was documented but not in force
 
-`n_jobs=1` was chosen deliberately for bit-reproducibility, recorded in
-`CLAUDE.md`, and read from config at model-construction time. It was then
+`n_jobs=1` was chosen deliberately for bit-reproducibility, recorded in the
+project brief, and read from config at model-construction time. It was then
 **silently discarded**: `HistGradientBoostingClassifier` has no `n_jobs`
 parameter — it parallelises through OpenMP — so the value went nowhere.
 
@@ -1378,7 +1378,7 @@ with sample size does.**
 
 ## 2026-08-13 — Decided in advance: no LSTM on 129 units
 
-CLAUDE.md's original plan lists LSTM embeddings of the early volume curve as
+The original project plan lists LSTM embeddings of the early volume curve as
 part of the temporal channel. **That is not being built as a headline
 component**, and the reasoning is recorded here *before* the temporal results
 exist so the report shows a judgement made in advance rather than a capability

@@ -21,7 +21,7 @@ Design constraints that are NOT negotiable here:
   Units are defined on all activity, because a topic's peak is a real-world
   event and does not belong to one language. Window FEATURES are counted on
   the chosen language alone, so language cannot carry class signal. The
-  topic-level matching that CLAUDE.md gotcha #5 prescribes is impossible
+  topic-level matching the original design prescribes is impossible
   here — the negative pool contains zero English topics at any usable size.
 
 Run:  python -m src.data.units            # primary setting
