@@ -434,5 +434,3 @@ quietly dropped.
 
 Code is MIT licensed — see [LICENSE](LICENSE). The licence covers this code
 only; the tweet corpus is not distributed here.
-
-Citation metadata is in [CITATION.cff](CITATION.cff).

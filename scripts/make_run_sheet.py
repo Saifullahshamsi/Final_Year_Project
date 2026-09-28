@@ -132,15 +132,15 @@ DOC = [
           "0.02 to 0.03 PR-AUC, so small differences in the third decimal are "
           "expected between machines; anything larger is not."),
 
-    ("h1", "6. Still outstanding"),
-    ("p", "Three placeholders must be filled before the repo goes public, "
-          "since the brief requires a publicly viewable repository at "
-          "submission time:"),
-    ("cmd", "README.md line 3        - CI badge, OWNER/REPO\n"
-            "LICENSE line 3          - TODO-SET-YOUR-NAME\n"
-            "CITATION.cff lines 11-15 - author name and repository-code"),
-    ("p", "Find them again at any time with:"),
+    ("h1", "6. Publication"),
+    ("p", "The repository is public at "
+          "github.com/Saifullahshamsi/Final_Year_Project. The CI badge, the "
+          "licence holder and the repository URL are all filled in - nothing "
+          "is left as a placeholder. Confirm that is still true with:"),
     ("cmd", "git grep -n \"OWNER/REPO\\|TODO-SET\""),
+    ("note", "Expect no output. A hit means a placeholder has come back, "
+             "which on a public graded repository is visible to anyone who "
+             "opens the front page."),
 ]
 
 

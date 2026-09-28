@@ -209,18 +209,12 @@ temporal.py prints "AUDIT/CONFIG MISMATCH" - a feature's measured correlation wi
 Results differ slightly from the committed tables - check the seed is still 42 in config.yaml. Resampling noise is plus or minus 0.02 to 0.03 PR-AUC, so small differences in the third decimal are expected between machines; anything larger is not.
 
 
-## 6. Still outstanding
+## 6. Publication
 
-Three placeholders must be filled before the repo goes public, since the brief requires a publicly viewable repository at submission time:
-
-```powershell
-README.md line 3        - CI badge, OWNER/REPO
-LICENSE line 3          - TODO-SET-YOUR-NAME
-CITATION.cff lines 11-15 - author name and repository-code
-```
-
-Find them again at any time with:
+The repository is public at github.com/Saifullahshamsi/Final_Year_Project. The CI badge, the licence holder and the repository URL are all filled in - nothing is left as a placeholder. Confirm that is still true with:
 
 ```powershell
 git grep -n "OWNER/REPO\|TODO-SET"
 ```
+
+> Expect no output. A hit means a placeholder has come back, which on a public graded repository is visible to anyone who opens the front page.
