@@ -1,6 +1,6 @@
 # Predictive Modelling of Social Media Trend Emergence
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![CI](https://github.com/Saifullahshamsi/Final_Year_Project/actions/workflows/ci.yml/badge.svg)](https://github.com/Saifullahshamsi/Final_Year_Project/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 
